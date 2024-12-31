@@ -25,7 +25,7 @@ author:
 # Navigation
 main:
   - title: "About"
-    url: /About/
+    url: /
   - title: "Publications"
     url: /publications/
   - title: "Resume"
