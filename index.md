@@ -19,7 +19,7 @@ Also, I recently find AI safety quite interesting and have been exploring.
 
 ## Recent News
 
-**June 2024**: My paper with Geoff, "A clock is just a way to tell the time: gravitational algebras in cosmological spacetimes," is out!
+**June 2024**: My paper with Geoff, ["A clock is just a way to tell the time: gravitational algebras in cosmological spacetimes,"](https://arxiv.org/abs/2406.02116) is out!
 
 **March 2024**: My paper with Andreas and Yasunori, ["Firewalls at exponentially late times,"](https://arxiv.org/abs/2403.07049) is out!
 
