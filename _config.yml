@@ -14,7 +14,7 @@ repository               : "Chang-Han-Chen/Chang-Han-Chen.github.io"  # Added th
 # Site Author
 author:
   name             : "Chang-Han Chen"
-  avatar           : "/assets/images/bio-photo.jpg"  # Add your photo here
+  avatar           : # Add your photo here
   bio              : "Physics PhD at UC Berkeley. I work on quantum aspects of spacetime."
   location         : "Berkeley, CA"
   links:
