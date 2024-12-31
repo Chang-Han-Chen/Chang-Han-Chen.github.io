@@ -1,6 +1,6 @@
 # Theme Settings
 remote_theme           : "mmistakes/minimal-mistakes"  # Uncomment this line
-minimal_mistakes_skin    : "default"
+minimal_mistakes_skin    : "contrast"
 
 # Site Settings
 locale                   : "en-US"
@@ -21,14 +21,11 @@ author:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
       url: "mailto:changhanc@berkeley.edu"
-    - label: "GitHub"
-      icon: "fab fa-fw fa-github"
-      url: "https://github.com/Chang-Han-Chen"
 
 # Navigation
 main:
   - title: "About"
-    url: /
+    url: /About/
   - title: "Publications"
     url: /publications/
   - title: "Resume"
@@ -37,6 +34,8 @@ main:
     url: /blog/
 
 # Defaults
+enable_copy_code_button: true
+
 defaults:
   # _pages
   - scope:
@@ -55,6 +54,8 @@ defaults:
       read_time: true
       share: false  # Changed to false to match academic style
       related: true
+      show_date: true
+      comments: false
 
 # Reading Files
 include:
