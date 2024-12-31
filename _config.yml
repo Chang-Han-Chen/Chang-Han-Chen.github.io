@@ -114,7 +114,7 @@ analytics:
 # Site Author
 author:
   name             : "Chang-Han Chen"  # Changed from "Your Name"
-  avatar           : "/assets/images/bio-photo.jpg"  # Add this if you have a profile photo
+  avatar           : "/assets/images/bio-photo2.jpg"  # Add this if you have a profile photo
   bio              : "Physics PhD at UC Berkeley. I work on quantum aspects of spacetime."  # Changed from default bio
   location         : "Berkeley, CA"  # Changed from "Somewhere"
   links:
