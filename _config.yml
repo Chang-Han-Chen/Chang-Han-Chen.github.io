@@ -1,5 +1,5 @@
 # Theme Settings
-remote_theme           : "mmistakes/minimal-mistakes"  # Uncomment this line
+#remote_theme           : "mmistakes/minimal-mistakes"  # Uncomment this line
 minimal_mistakes_skin    : "contrast"
 
 # Site Settings
