@@ -6,8 +6,6 @@ author_profile: true
 classes: wide
 ---
 
-## Research Papers
-
 1. **A clock is just a way to tell the time: gravitational algebras in cosmological spacetimes** (2024)  
    Chang-Han Chen (UC, Berkeley), Geoff Penington (UC, Berkeley)  
    arXiv: [2406.02116](https://arxiv.org/abs/2406.02116) [hep-th]   
