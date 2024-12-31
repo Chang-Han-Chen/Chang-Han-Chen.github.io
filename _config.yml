@@ -1,6 +1,6 @@
 # Theme Settings
 #remote_theme           : "mmistakes/minimal-mistakes"  # Uncomment this line
-minimal_mistakes_skin    : "contrast"
+minimal_mistakes_skin    : "air"
 
 # Site Settings
 locale                   : "en-US"
