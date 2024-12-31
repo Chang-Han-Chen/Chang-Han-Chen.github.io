@@ -29,5 +29,5 @@ I recently find AI alignment research interesting and have been exploring.
 ## Contacts:
 - Email: [changhanc@berkeley.edu]
   
-Always feel free to reach out to me with things you find exciting!
+Feel free to reach out to me!
 
