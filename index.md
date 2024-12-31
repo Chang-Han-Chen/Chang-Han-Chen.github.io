@@ -27,7 +27,7 @@ I recently find AI alignment research interesting and have been exploring.
 **April 2022**: My paper with Xiao-Gang, ["The boundaries of 2+1D fermionic topological orders,"](https://arxiv.org/abs/2204.06589) is out!
 
 ## Contacts:
-- Email: [changhanc@berkeley.edu]
+- Email: [mailto: changhanc@berkeley.edu]
   
 Feel free to reach out to me!
 
