@@ -8,11 +8,12 @@ Physics PhD at UC Berkeley. I work on quantum aspects of spacetime.
 I am a doctoral researcher in theoretical physics working with [Geoff Penington](https://physics.berkeley.edu/people/faculty/geoff-penington). Prior to this, I obtained my undergraduate degree in both Mathematics and Physics from MIT and worked with [Hong Liu](https://physics.mit.edu/faculty/hong-liu/) (my thesis advisor) and [Xiao-Gang Wen](https://physics.mit.edu/faculty/xiao-gang-wen/).
 
 My research spans quantum gravity, holography, and quantum many-body systems, with a particular focus on:
-- Quantum gravity and holography
-- Quantum information in many-body systems
-- Black hole physics
+- Does "quantum mechnics + general relativity" imply "our universe is a hologram"?
+- Are there any universality of sub-maximal chaos in many-body systems? For example, are they all "stringy"? 
 
-I recently find AI alignment research interesting and have been exploring.
+I believe that the first question is the holy grail of what many people would call the "semicalssical quantum gravity." Notice that, on the left hand side, there is no mention of string theory, loop quantum gravity, etc. Just the most basic QM and GR, which are both well-tested by experiments. I believe that this is enough to sharpen/prove statements like "spacetime is information-theoretic," "spacetime is holographic," etc, with tools such as some extension of von Neumann algebra.
+
+Also, I recently find AI safety quite interesting and have been exploring.
 
 
 
