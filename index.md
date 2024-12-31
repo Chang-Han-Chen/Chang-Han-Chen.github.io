@@ -3,9 +3,6 @@ layout: home
 author_profile: true
 classes: wide
 ---
-
-# Chang-Han Chen
-
 Physics PhD at UC Berkeley. I work on quantum aspects of spacetime.
 
 I am a doctoral researcher in theoretical physics working with [Geoff Penington](https://physics.berkeley.edu/people/faculty/geoff-penington). Prior to this, I obtained my undergraduate degree in both Mathematics and Physics from MIT and worked with [Hong Liu](https://physics.mit.edu/faculty/hong-liu/) (my thesis advisor) and [Xiao-Gang Wen](https://physics.mit.edu/faculty/xiao-gang-wen/).
@@ -17,10 +14,6 @@ My research spans quantum gravity, holography, and quantum many-body systems, wi
 
 I recently find AI alignment research interesting and have been exploring.
 
-Always feel free to reach out to me with things you find exciting!
-
-## Contacts:
-- Email: [changhanc@berkeley.edu]
 
 
 ## Recent News
@@ -32,3 +25,9 @@ Always feel free to reach out to me with things you find exciting!
 **May 2022**: I got the [Morse/Orloff Research Award](https://physics.mit.edu/academic-programs/student-awards/) from MIT! This is the best senior thesis award in theoretical Physics. You can find my thesis here, ["Geometry and entanglement in AdS/CFT and beyond."](https://inspirehep.net/files/c1b52950194cd41895084217803489d7)
 
 **April 2022**: My paper with Xiao-Gang, ["The boundaries of 2+1D fermionic topological orders,"](https://arxiv.org/abs/2204.06589) is out!
+
+## Contacts:
+- Email: [changhanc@berkeley.edu]
+  
+Always feel free to reach out to me with things you find exciting!
+
