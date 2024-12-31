@@ -22,16 +22,14 @@ author:
       icon: "fas fa-fw fa-envelope-square"
       url: "mailto:changhanc@berkeley.edu"
 
-# Navigation
-main:
-  - title: "About"
-    url: /
-  - title: "Publications"
-    url: /publications/
-  - title: "Resume"
-    url: /resume/
-  - title: "Blog"
-    url: /blog/
+permalink: /:categories/:title/
+timezone: # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+
+# Pagination with jekyll-paginate
+paginate: 5 # amount of posts to show
+paginate_path: /page:num/
+
 
 # Defaults
 enable_copy_code_button: true
