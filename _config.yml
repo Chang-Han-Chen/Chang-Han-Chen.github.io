@@ -12,7 +12,7 @@
 
 # theme                  : "minimal-mistakes-jekyll"
 # remote_theme           : "mmistakes/minimal-mistakes"
-minimal_mistakes_skin    : "dark" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
+minimal_mistakes_skin    : "contrast" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
 
 # Site Settings
 locale                   : "en-US"
@@ -117,7 +117,6 @@ author:
   avatar           : "/assets/images/bio-photo.jpg"  # Add this if you have a profile photo
   bio              : "Physics PhD at UC Berkeley. I work on quantum aspects of spacetime."  # Changed from default bio
   location         : "Berkeley, CA"  # Changed from "Somewhere"
-  email            : "changhanc@berkeley.edu"  # Added your email
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
