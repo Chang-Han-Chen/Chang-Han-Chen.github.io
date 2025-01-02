@@ -19,11 +19,16 @@ Also, I recently find AI safety quite interesting and have been exploring.
 
 ## Recent News
 
+**November 2024** I am invited to present my paper with Geoff in the ["Information, Geometry and
+Physics Seminar"](https://www.its.caltech.edu/~vigneaux/igps/) at Caltech!
+
 **June 2024**: My paper with Geoff, ["A clock is just a way to tell the time: gravitational algebras in cosmological spacetimes,"](https://arxiv.org/abs/2406.02116) is out!
+
+**May 2024**: I am invited to present my paper with Andreas and Yasunori in the “New ideas for old black holes” workshop (private) at UC Berkeley!
 
 **March 2024**: My paper with Andreas and Yasunori, ["Firewalls at exponentially late times,"](https://arxiv.org/abs/2403.07049) is out!
 
-**May 2022**: I got the [Morse/Orloff Research Award](https://physics.mit.edu/academic-programs/student-awards/) from MIT! This is the best senior thesis award in theoretical Physics. You can find my thesis here, ["Geometry and entanglement in AdS/CFT and beyond."](https://inspirehep.net/files/c1b52950194cd41895084217803489d7)
+**May 2022**: I get the [Morse/Orloff Research Award](https://physics.mit.edu/academic-programs/student-awards/) from MIT! This is the best senior thesis award in theoretical Physics. You can find my thesis here, ["Geometry and entanglement in AdS/CFT and beyond."](https://inspirehep.net/files/c1b52950194cd41895084217803489d7)
 
 **April 2022**: My paper with Xiao-Gang, ["The boundaries of 2+1D fermionic topological orders,"](https://arxiv.org/abs/2204.06589) is out!
 
