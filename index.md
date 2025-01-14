@@ -32,6 +32,10 @@ Physics Seminar"](https://www.its.caltech.edu/~vigneaux/igps/) at Caltech!
 
 **April 2022**: My paper with Xiao-Gang, ["The boundaries of 2+1D fermionic topological orders,"](https://arxiv.org/abs/2204.06589) is out!
 
+## Awards
+**May 2022**: [Best senior thesis](https://physics.mit.edu/academic-programs/student-awards/) in theoretical physics from MIT, class 2022.
+
+**July 2018** Gold medal in the [International Physics Olympiad](https://ipho-unofficial.org/timeline/2018/individual) (IPhO) in Portugal.
 ## Contacts:
 - Email: [changhanc@berkeley.edu](changhanc@berkeley.edu)
   
