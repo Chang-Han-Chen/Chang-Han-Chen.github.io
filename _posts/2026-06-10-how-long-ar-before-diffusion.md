@@ -1,8 +1,8 @@
 ---
-title: "How Long Should We Train AR Before Switching to Diffusion?"
+title: "How much autoregressive training does Diffusion Language Model need?"
 layout: post
 date: 2026-06-10
-excerpt: "Every at-scale diffusion LM spends 85–99.9% of its budget on autoregressive pretraining. I swept the whole range at 70M scale and found the optimum near 30%."
+excerpt: "If GPT-7 will be a diffusion LM, should they pretrain from scratch or from an AR checkpoint? I swept the whole range for a 1M dense transformer and a 70M MoE and consistently found the optimum near 30%."
 permalink: /blog/how-long-ar-before-diffusion/
 ---
 
@@ -16,9 +16,7 @@ permalink: /blog/how-long-ar-before-diffusion/
 {:toc}
 </details>
 
-This is the first post in what I hope becomes a small series about my journey into deep learning. I started seriously studying it only a few months ago. This semester I took *Advanced NLP* with Sewon Min and *Seminar in Deep Learning Theory* with Jason Lee, and three topics kept pulling at my attention: diffusion language models, &mu;P, and Muon. They felt like three doors into the same larger question: **how do we make pretraining more predictable, more principled, and less like folklore?**
-
-This post is about the first door. It covers my term project for Sewon's class, where I studied a simple curriculum for pretraining block-diffusion language models. ([Full report PDF here.](/assets/pdf/block-size-curriculum-dlm-report.pdf))
+As mentioned in the previous post, I will cover in this post my term project for Sewon's class, where I studied a simple curriculum for pretraining block-diffusion language models. ([Full report PDF here.](/assets/pdf/block-size-curriculum-dlm-report.pdf))
 
 ## The question nobody swept
 

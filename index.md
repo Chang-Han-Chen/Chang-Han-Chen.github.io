@@ -14,9 +14,9 @@ I work with [Geoff Penington](https://physics.berkeley.edu/people/faculty/geoff-
 
 My research spans quantum gravity, holography, and quantum many-body systems, with a particular focus on:
 - Does "quantum mechanics + general relativity" imply "our universe is a hologram"?
-- Is there any universality of sub-maximal chaos in many-body systems? For example, are they all "stringy"?
+- What's the experience of an observer falling into a black hole? Does it hit a firewall?
 
-I believe that the first question is the holy grail of the so-called "semiclassical quantum gravity." Notice that, on the left hand side, there is no mention of string theory, loop quantum gravity, etc. Just the most basic QM and GR, which are both well-tested by experiments. I believe that this is enough to sharpen/prove statements like "spacetime is information-theoretic," "spacetime is holographic," etc, with tools such as some extension of von Neumann algebra.
+The first question is arguably the holy grail of semiclassical quantum gravity. Why do I emphasize "semiclassical"? Because that's the regime we live in: GR at the galaxy scale, QM at the nano lab scale, and some signatures of both from early-universe observations but nothing crazy. Importantly, I did not mention string theory, loop quantum gravity, etc. Just the most basic QM and GR, both well-tested by experiments. If the first question is true, that means although AdS/CFT is historically first derived in string theory, holography might be more fundamental about gravity than strings because it only relies on GR and QM. Many papers written by Geoff and myself are evidence for this claim. I find such a bottom-up perspective of holography, grounded in real-life observations, a lot more exciting.
 
 Recently, I have been exploring AI research.
 
