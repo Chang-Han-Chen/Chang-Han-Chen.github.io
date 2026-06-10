@@ -13,8 +13,9 @@
   --info-bg: #eff6ff;
   --success-border: #16a34a;
   --success-bg: #f0fdf4;
-  --content-width: 760px;
-  --content-width-wide: 1000px;
+  /* Widths in rem so the text column scales with the font size */
+  --content-width: 46rem;
+  --content-width-wide: 58rem;
 }
 
 * {
@@ -22,7 +23,7 @@
 }
 
 html {
-  font-size: 17px;
+  font-size: 19px;
 }
 
 body {
@@ -399,6 +400,12 @@ details.post-toc a:hover {
 /* --------------------------------------------------------------------------
    Small screens
    -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  html {
+    font-size: 17px;
+  }
+}
 
 @media (max-width: 600px) {
   html {
