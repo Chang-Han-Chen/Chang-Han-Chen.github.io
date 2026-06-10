@@ -9,6 +9,55 @@ search: false
 @import "minimal-mistakes"; // main partials
 
 /* ==========================================================================
+   Post typography — roomier line spacing and paragraph rhythm
+   ========================================================================== */
+
+.page__content {
+  line-height: 1.75;
+
+  p {
+    margin: 0 0 1.5em;
+    line-height: 1.75;
+  }
+
+  ul,
+  ol {
+    margin-bottom: 1.5em;
+
+    li {
+      margin-bottom: 0.45em;
+      line-height: 1.7;
+    }
+  }
+
+  h2 {
+    margin-top: 2.4em;
+    margin-bottom: 0.8em;
+  }
+
+  h3 {
+    margin-top: 1.8em;
+    margin-bottom: 0.6em;
+  }
+
+  figure {
+    margin: 2.2em 0;
+  }
+
+  figcaption {
+    color: $muted-text-color;
+    font-size: 0.85em;
+    line-height: 1.5;
+    text-align: center;
+    margin-top: 0.75em;
+  }
+
+  table {
+    margin: 1.8em 0 2em;
+  }
+}
+
+/* ==========================================================================
    Post subtitle + collapsible table of contents (EleutherAI / PaperMod style)
    ========================================================================== */
 
@@ -16,14 +65,16 @@ search: false
   font-style: italic;
   color: $muted-text-color;
   margin-top: -0.5em;
+  margin-bottom: 1.5em;
   font-size: 1.05em;
 }
 
 details.post-toc {
   border: 1px solid $border-color;
   border-radius: 8px;
-  padding: 0.75em 1em;
-  margin: 1.5em 0 2em;
+  background: mix($border-color, $background-color, 25%);
+  padding: 0.85em 1.15em;
+  margin: 1.75em 0 2.25em;
 
   summary {
     cursor: pointer;
@@ -40,16 +91,18 @@ details.post-toc {
   > ul {
     max-height: 60vh;
     overflow-y: auto;
-    margin: 0.75em 0 0.25em;
-    padding-inline-start: 1.25em;
+    margin: 0.9em 0 0.25em;
+    padding-inline-start: 1.4em;
 
     ul {
-      margin: 0.25em 0;
+      margin: 0.25em 0 0.25em;
+      padding-inline-start: 1.2em;
     }
 
     li {
-      margin: 0.3em 0;
+      margin: 0.35em 0;
       font-size: 0.95em;
+      line-height: 1.5;
     }
 
     a {

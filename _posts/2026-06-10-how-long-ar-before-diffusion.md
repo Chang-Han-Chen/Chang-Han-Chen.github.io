@@ -12,6 +12,7 @@ tags:
 excerpt: "Every at-scale diffusion LM spends 85–99.9% of its budget on autoregressive pretraining. I swept the whole range at 70M scale and found the optimum near 30%."
 permalink: /blog/how-long-ar-before-diffusion/
 classes: wide
+author_profile: false
 ---
 
 *A small-scale experiment on whether diffusion language models should really be initialized from almost-fully-trained autoregressive checkpoints.*
