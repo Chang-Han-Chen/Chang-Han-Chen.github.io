@@ -1,13 +1,12 @@
 ---
 title: "Resume"
-layout: single
+layout: page
 permalink: /resume/
-classes: wide
+wide: true
+show_title: false
 ---
 
-
-
-<object data="Changhan_CV.pdf" type="application/pdf" width="100%" height="100vh">
-    <p>It appears your browser doesn't support embedded PDFs. 
+<object class="pdf-embed" data="Changhan_CV.pdf" type="application/pdf">
+    <p>It appears your browser doesn't support embedded PDFs.
     <a href="Changhan_CV.pdf">Click here to download the PDF.</a></p>
 </object>

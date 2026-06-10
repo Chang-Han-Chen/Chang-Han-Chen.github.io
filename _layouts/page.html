@@ -1,0 +1,7 @@
+---
+layout: default
+---
+{% unless page.show_title == false or page.title == nil %}
+<h1 class="page-title">{{ page.title }}</h1>
+{% endunless %}
+{{ content }}
