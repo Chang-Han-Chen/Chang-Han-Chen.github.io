@@ -12,9 +12,17 @@ tags:
 excerpt: "Every at-scale diffusion LM spends 85–99.9% of its budget on autoregressive pretraining. I swept the whole range at 70M scale and found the optimum near 30%."
 permalink: /blog/how-long-ar-before-diffusion/
 classes: wide
-toc: true
-toc_sticky: true
 ---
+
+*A small-scale experiment on whether diffusion language models should really be initialized from almost-fully-trained autoregressive checkpoints.*
+{: .post-subtitle}
+
+<details class="post-toc" markdown="1">
+<summary>Table of Contents</summary>
+
+* TOC
+{:toc}
+</details>
 
 This is the first post in what I hope becomes a small series about my journey into deep learning. I started seriously studying it only a few months ago. This semester I took *Advanced NLP* with Sewon Min and *Seminar in Deep Learning Theory* with Jason Lee, and three topics kept pulling at my attention: diffusion language models, &mu;P, and Muon. They felt like three doors into the same larger question: **how do we make pretraining more predictable, more principled, and less like folklore?**
 

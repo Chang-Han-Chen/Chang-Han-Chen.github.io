@@ -7,3 +7,57 @@ search: false
 
 @import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
 @import "minimal-mistakes"; // main partials
+
+/* ==========================================================================
+   Post subtitle + collapsible table of contents (EleutherAI / PaperMod style)
+   ========================================================================== */
+
+.post-subtitle {
+  font-style: italic;
+  color: $muted-text-color;
+  margin-top: -0.5em;
+  font-size: 1.05em;
+}
+
+details.post-toc {
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  margin: 1.5em 0 2em;
+
+  summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.05em;
+    user-select: none;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  /* scrollable when the list is long */
+  > ul {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 0.75em 0 0.25em;
+    padding-inline-start: 1.25em;
+
+    ul {
+      margin: 0.25em 0;
+    }
+
+    li {
+      margin: 0.3em 0;
+      font-size: 0.95em;
+    }
+
+    a {
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
