@@ -1,0 +1,343 @@
+---
+title: "How long should we train AR before switching to diffusion?"
+date: 2026-06-10
+categories:
+  - ai
+tags:
+  - diffusion language models
+  - pretraining
+  - transformers
+  - mixture of experts
+  - muon
+excerpt: "A small-scale experiment on whether diffusion language models should really be initialized from almost-fully-trained autoregressive checkpoints."
+permalink: /blog/how-long-ar-before-diffusion/
+classes: wide
+toc: true
+toc_sticky: true
+---
+
+<style>
+  .dlm-post {
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --ink-soft: #475569;
+    --border: #d8dee9;
+    line-height: 1.75;
+  }
+
+  .dlm-post .lead {
+    color: var(--ink-soft);
+    font-size: 1.08em;
+    margin-top: 0.25rem;
+  }
+
+  .dlm-post .question-box,
+  .dlm-post .takeaway-box {
+    border-left: 4px solid var(--accent);
+    background: var(--accent-soft);
+    margin: 1.5rem 0;
+    padding: 1rem 1.15rem;
+  }
+
+  .dlm-post .question-box strong,
+  .dlm-post .takeaway-box strong {
+    color: #0f172a;
+  }
+
+  .dlm-post .small-note {
+    color: var(--ink-soft);
+    font-size: 0.92em;
+  }
+
+  .dlm-post figure {
+    margin: 1.8rem 0;
+  }
+
+  .dlm-post figure img {
+    border: 1px solid var(--border);
+    display: block;
+    height: auto;
+    width: 100%;
+  }
+
+  .dlm-post figcaption {
+    color: var(--ink-soft);
+    font-size: 0.9em;
+    margin-top: 0.5rem;
+  }
+
+  .dlm-post table {
+    font-size: 0.92em;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .dlm-post .math-ish {
+    white-space: nowrap;
+  }
+</style>
+
+<article class="dlm-post">
+  <p class="lead">
+    Question: how long should we train an autoregressive language model before switching it to diffusion?
+  </p>
+
+  <p>
+    This is the first blog in what I hope becomes a small series about my recent journey into deep learning.
+    I only started seriously learning deep learning a few months ago. This semester I took
+    <em>Advanced NLP</em> with Sewon Min and <em>Seminar in Deep Learning Theory</em> with Jason Lee.
+    Three topics kept pulling at my attention: diffusion, &mu;P, and Muon. They felt like three different
+    doors into the same larger question I keep circling around: how do we make pretraining more predictable,
+    more principled, and less like folklore?
+  </p>
+
+  <p>
+    This post is about the first door: diffusion language models. More specifically, it is about my term
+    project for Sewon's NLP class, where I studied a simple curriculum for pretraining block-diffusion
+    language models.
+  </p>
+
+  <div class="question-box">
+    <strong>The question I wanted to test:</strong>
+    most open-source diffusion language models are converted from strong autoregressive checkpoints.
+    If we really believed the final model should be a diffusion model, would we still spend almost all
+    of pretraining on the AR objective?
+  </div>
+
+  <p>
+    My answer, at the scale I could afford to test, was: probably not. In my sweep, spending about
+    <strong>30% of the training budget on AR and then switching to small-block diffusion</strong> worked better
+    than both training diffusion from scratch and doing an AR-heavy conversion.
+  </p>
+
+  <h2 id="why-i-care-about-this">Why I care about this</h2>
+
+  <p>
+    I am very interested in pretraining science. This is a slightly dangerous thing to be interested in as an
+    independent researcher, because the cleanest version of many questions seems to require enormous compute.
+    It is easy to look at frontier-scale training and feel like the only honest answer is "wait until you have
+    a datacenter."
+  </p>
+
+  <p>
+    But I think there is another way to make progress: turn a huge-scale question into a small testable
+    hypothesis. The result may not settle the frontier-scale question, but it can still tell you whether an
+    idea has the right shape. That was the spirit of this project. I did not try to train a giant diffusion LM.
+    I tried to isolate one knob that current recipes mostly leave implicit: the fraction of compute spent on
+    AR before switching to diffusion.
+  </p>
+
+  <h2 id="first-i-needed-a-model-i-trusted">First I needed a model I trusted</h2>
+
+  <p>
+    Before asking curriculum questions, I needed to learn how to train a modern-ish transformer at all. I
+    started from a LLaMA-style 70M transformer, then added a collection of architecture and optimizer
+    interventions that I had seen in recent work: QK norm, per-head attention gates, depth-scaled layernorm,
+    value residuals, ReGLU, RMSNorm, and interleaved MoE layers. The optimizer was NorMuon plus AdamW,
+    with Muon handling matrix parameters and AdamW handling embeddings and scalar parameters.
+  </p>
+
+  <p>
+    One thing I wanted to check was whether tricks studied mostly in autoregressive models still help once
+    the objective changes. My short version from the class presentation was:
+  </p>
+
+  <ul>
+    <li>Most architecture papers study AR models.</li>
+    <li>I wanted to know whether diffusion models benefit from the same architecture.</li>
+    <li>My finding: probably yes.</li>
+  </ul>
+
+  <p>
+    On the AR objective, the combined recipe improved best validation loss by about <strong>3.5%</strong> over
+    my plain transformer baseline. More importantly for this project, these interventions gave me a stronger
+    and more stable base model for the diffusion experiments. I also got a lot of practical experience here:
+    training MoE models, watching router health, making architecture changes without breaking the training
+    loop, and learning how the optimizer choices show up in loss curves.
+  </p>
+
+  <p>
+    This part was not the headline result, but it mattered. A curriculum experiment is only meaningful if the
+    underlying model is not falling apart for unrelated reasons.
+  </p>
+
+  <h2 id="the-curriculum-knob">The curriculum knob</h2>
+
+  <p>
+    Block diffusion gives a nice way to think about the problem. AR is like block size 1: predict left to
+    right. Full masked diffusion is like block size equal to the sequence length: denoise a whole sequence.
+    BD3 sits in between: decode blocks left to right, but do diffusion-style denoising inside each block.
+  </p>
+
+  <p>
+    So I used a two-stage curriculum:
+  </p>
+
+  <ol>
+    <li>Train autoregressively for a fraction <span class="math-ish">p<sub>AR</sub></span> of the budget.</li>
+    <li>Switch to BD3 with block size <span class="math-ish">b</span> for the rest.</li>
+  </ol>
+
+  <p>
+    Current open-source large dLM recipes often live near the high-AR corner: start from a very strong AR
+    base, then do a comparatively short diffusion adaptation. That is a very practical thing to do if the AR
+    checkpoint already exists. But if we are training from scratch and we actually want the final model to be
+    diffusion, it is not obvious that this should be the default.
+  </p>
+
+  <p>
+    Half-jokingly, my motivating question became:
+  </p>
+
+  <div class="question-box">
+    <strong>If someone wanted a future GPT-scale model to be a diffusion model, should they really spend
+    almost all of the compute training it as an autoregressive model first?</strong>
+  </div>
+
+  <h2 id="the-answer-i-found">The answer I found</h2>
+
+  <p>
+    I swept the AR fraction at 70M MoE scale on ClimbMix, with sequence length 512 and a fixed optimizer-step
+    budget. The cleanest result was that <span class="math-ish">p<sub>AR</sub> = 0.30</span> was the best switch
+    point for the small and medium BD3 block sizes I tested.
+  </p>
+
+  <figure>
+    <img src="/assets/images/dlm-block-length-invariance.png" alt="Validation loss versus AR fraction for AR to BD3 and MDLM to BD3 curricula">
+    <figcaption>
+      The surprising pattern: for AR to BD3, the best switch point stayed near 30% AR for block sizes up to 64.
+      Very large blocks behaved differently.
+    </figcaption>
+  </figure>
+
+  <p>
+    The result that surprised me most was not just that 30% AR was good. It was that the best AR fraction
+    looked approximately independent of the post-switch block size, at least for <span class="math-ish">b &le; 64</span>.
+    Naively I expected the best switch point to depend strongly on block size. A tiny block is almost AR-like,
+    so maybe it should want more AR pretraining. A larger block is less AR-like, so maybe it should want less.
+    Instead, the optimum stayed around 30%.
+  </p>
+
+  <p>
+    My current interpretation is that the useful AR-transfer part saturates early. AR quickly learns things
+    diffusion can also use: token statistics, syntax, semantics, maybe some broadly useful representations.
+    After that, additional AR training increasingly specializes the model for left-to-right prediction. Those
+    later AR-specific circuits may not help diffusion much, even if the diffusion block size changes.
+  </p>
+
+  <p>
+    The exception was very large block size. At <span class="math-ish">b = 256</span>, AR initialization failed
+    badly and training BD3 from scratch won. That also makes sense: once the diffusion task is far enough from
+    AR, the warm start stops being a warm start.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Post-switch BD3 block size</th>
+        <th>Best recipe in my sweep</th>
+        <th>Short read</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="math-ish">b = 4</span></td>
+        <td>30% AR &rarr; BD3</td>
+        <td>AR warm start helps.</td>
+      </tr>
+      <tr>
+        <td><span class="math-ish">b = 64</span></td>
+        <td>30% AR &rarr; BD3</td>
+        <td>The same switch point still helps.</td>
+      </tr>
+      <tr>
+        <td><span class="math-ish">b = 256</span></td>
+        <td>Scratch BD3</td>
+        <td>The task is too far from AR.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="the-failure-case-was-more-interesting-than-i-expected">The failure case was more interesting than I expected</h2>
+
+  <p>
+    Diffusion language models are often motivated by data efficiency: when unique training data is limited,
+    diffusion objectives may keep improving after AR starts to overfit. So I also tried the curriculum in a
+    data-constrained, multi-epoch setting.
+  </p>
+
+  <p>
+    The naive 30% AR recipe failed there. At first this was disappointing, but the failure was also useful.
+    The AR phase overfit early, and in the MoE model the router became unhealthy around the handoff. The BD3
+    continuation inherited this damage and never caught the scratch BD3 baseline.
+  </p>
+
+  <figure>
+    <img src="/assets/images/dlm-data-constrained-u25m.png" alt="Data constrained training curves comparing scratch BD3, naive curriculum, and tuned curriculum">
+    <figcaption>
+      In the data-constrained setting, the naive AR warm start failed. Adding AR-phase weight decay largely
+      fixed the problem and made the curriculum track scratch BD3 closely.
+    </figcaption>
+  </figure>
+
+  <p>
+    The fix was phase-specific regularization. I added weight decay during the AR phase, with no router weight
+    decay and no BD3-phase weight decay. This kept the AR phase from overfitting as hard and preserved router
+    health. The tuned curriculum got back to within about 0.01-0.02 nats of scratch BD3 at the data sizes I
+    tested.
+  </p>
+
+  <p>
+    This was a good lesson for me. The best AR validation loss was not the thing that predicted the best BD3
+    continuation. In one run, the tuned AR phase actually had worse AR validation loss than the no-WD AR phase,
+    but led to a much better diffusion model. The representation you want to transfer is not always the same
+    thing as the source objective's best checkpoint.
+  </p>
+
+  <h2 id="what-i-take-away">What I take away</h2>
+
+  <div class="takeaway-box">
+    <strong>My current recipe:</strong>
+    when pretraining a small-block diffusion language model from scratch, try about 30% AR first, then switch
+    to BD3. If the data is multi-epoch/data-constrained, regularize the AR phase carefully and watch the MoE
+    router.
+  </div>
+
+  <p>
+    I do not want to oversell this. This is a 70M-scale experiment with sequence length 512, a fixed
+    optimizer-step budget, and validation loss as the main metric. The exact number 30% is not a law of nature.
+    A wall-clock-fixed comparison may prefer a larger AR fraction, because AR steps are cheaper than BD3 steps
+    in my implementation. Larger models, longer context, different tokenizers, and dense rather than MoE
+    architectures could move the optimum.
+  </p>
+
+  <p>
+    Still, I think the result is suggestive. It says that "convert a mostly finished AR model to diffusion" is
+    not the only natural default. If the final objective is diffusion, the useful part of AR may arrive much
+    earlier than current adaptation recipes imply.
+  </p>
+
+  <p>
+    More personally, this project made me more excited about pretraining science. I like the combination of
+    theory-shaped questions and very concrete engineering details: optimizer state, router entropy, weight
+    decay groups, loss curves that suddenly tell you something is wrong. I also like the discipline of turning
+    a question that sounds too large for my resources into one I can actually test.
+  </p>
+
+  <p>
+    I am still very new to this area, which is part of the fun. A few months ago, I did not know how to train
+    these models. In this project I learned to train MoE transformers, make architecture improvements, use
+    Muon, pick up diffusion objectives, and debug a curriculum that failed for a non-obvious reason. That is
+    exactly the kind of learning loop I want more of.
+  </p>
+
+  <p>
+    Next, I want to understand how this interacts with &mu;P and better scaling methodology. If the point is to
+    make pretraining decisions predictable before spending the full budget, then scaling rules are not a side
+    topic. They are the game.
+  </p>
+
+  <p class="small-note">
+    Full report:
+    <a href="/assets/pdf/block-size-curriculum-dlm-report.pdf">A Block-Size Curriculum for Diffusion Language Model Pretraining</a>.
+  </p>
+</article>
