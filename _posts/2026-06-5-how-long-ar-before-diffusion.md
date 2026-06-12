@@ -1,7 +1,7 @@
 ---
 title: "How much autoregressive training does Diffusion Language Model need?"
 layout: post
-date: 2026-06-10
+date: 2026-06-05
 excerpt: "If GPT-7 will be a diffusion LM, should they pretrain from scratch or from an AR checkpoint? I swept the whole range for a 1M dense transformer and a 70M MoE and consistently found the optimum near 30%."
 permalink: /blog/how-long-ar-before-diffusion/
 ---

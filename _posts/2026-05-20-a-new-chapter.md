@@ -1,7 +1,7 @@
 ---
 title: "A New Chapter?"
 layout: post
-date: 2026-06-01
+date: 2026-05-20
 excerpt: "Irresistible temptation to understand intelligence"
 permalink: /blog/a-new-chapter/
 ---
