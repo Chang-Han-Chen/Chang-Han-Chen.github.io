@@ -20,21 +20,14 @@ After the [diffusion LM project](/blog/how-long-ar-before-diffusion/), I felt li
 
 **Tl;dr** I didn't manage to get autoresearch to generate interesting ideas that actually work. With Karpathy's `program.md`, Codex (5.5 xhigh) basically just swept a finer and finer grid of hyperparameters. I then iterated through a few versions of the program, eventually getting it to run literature search and propose research, but none of the ideas panned out in the end. This could well be a test-time-compute issue — I only let it work over one night max per attempt. So in the end I did the idea-generation myself and asked Codex to implement techniques like XSA, gated attention, and so on. The one trick Codex found on its own that did work: under a fixed wall-clock budget, making the first two FFN layers dense helps, mostly because it trains faster. To see whether these interventions survive at scale, I wrote a second program for scaling-law experiments, asked Codex to implement and babysit the runs, and collected the results. Excitingly, the gains look real at ~10× the original scale and aren't diminishing! Though of course we'd need to go well beyond the $$\sim 4\times 10^{19}$$ FLOPs of our biggest run to be sure.
 
-For the impatient, here is the speedrun leaderboard — every intervention that became the new fixed-wall best (how each works: Appendix A; how they were found: Phase 1):
+For the impatient, here is the whole speedrun at a glance — every intervention that became the new fixed-wall best, stacking up to −1.75% BPB (how each works: Appendix A; how they were found: Phase 1):
 
-| # | intervention | val BPB | Δ vs prev | cumulative |
-|---|---|---|---|---|
-| 0 | clean simple backbone, LR 0.003 | 0.954881 | — | — |
-| 1 | fixed value mix $$0.5 v_1 + 0.5 v_\ell$$ | 0.947597 | 0.763% | 0.763% |
-| 2 | value mix $$0.75 v_1 + 0.25 v_\ell$$ | 0.945791 | 0.191% | 0.952% |
-| 3 | sigmoid affinities + expert bias + load-balance 0.003 | 0.942848 | 0.311% | 1.260% |
-| 4 | exclusive self-attention | 0.940518 | 0.247% | 1.504% |
-| 5 | headwise attention gate, init 0.95 | 0.940352 | 0.018% | 1.522% |
-| 6 | headwise attention gate, init 0.98 | 0.940076 | 0.029% | 1.550% |
-| 7 | first FFN layer dense | 0.938510 | 0.167% | 1.714% |
-| 8 | first two FFN layers dense | 0.938179 | 0.035% | **1.749%** |
+<figure>
+  <img src="/assets/images/speedrun_progression.png" alt="Phase 1 fixed-wall leaderboard progression from 0.9549 to 0.9382 BPB across eight interventions">
+  <figcaption>The speedrun staircase. Eight successive fixed-wall bests, cumulative −1.75% BPB. Not shown: the much larger number of runs that died on this hill.</figcaption>
+</figure>
 
-A bunch of disclaimers upfront: our MoE router might be suboptimally tuned, though I put significant effort into making it at least *look* healthy; the scaling curve has fewer data points than I'd like; everything is single-seed; and there are no layer-specific hyperparameters like &mu;P (so the embedding layer is likely undertrained), though I did sweep the global learning rate at each scale.
+A bunch of **disclaimers** upfront: our MoE router might be suboptimally tuned, though I put significant effort into making it at least *look* healthy; the scaling curve has fewer data points than I'd like; everything is single-seed; and there are no layer-specific hyperparameters like &mu;P (so the embedding layer is likely undertrained), though I did sweep the global learning rate at each scale.
 
 Still, I'm writing it up anyway. This is a learning process, and hopefully by exposing the process (mistakes included) I can collect some dense reward signals from the experts out there. Let me know if you have any feedback!
 
@@ -71,7 +64,7 @@ Concretely, every run has to walk through this loop:
   <figcaption>The per-run loop the program enforces. The point isn't the boxes; it's that you must write the prediction <em>before</em> the run, so a result can actually surprise you.</figcaption>
 </figure>
 
-> The key discipline is: **pre-register the hypothesis before launching the run, then update the belief after reading the result.** Do not blindly try changes; chase the highest signal.
+> The key discipline is: **write down the hypothesis before launching the run, then update the belief after reading the result.** Do not blindly try changes; chase the highest signal.
 
 Every run entry must contain a pre-run hypothesis, an expected result, the observed result, an interpretation, an explicit `agrees with hypothesis: yes/no/partial`, and a decision. Here's a representative entry from the log, the one where exclusive self-attention got promoted to baseline:
 
@@ -81,7 +74,8 @@ Every run entry must contain a pre-run hypothesis, an expected result, the obser
 >
 > **Observed result:** `val_bpb 0.940518` […] validation improved by `0.002330` BPB. Router health remained acceptable: mean load CV `0.094`, max-layer max load `0.122` […]
 >
-> **Agrees with hypothesis:** yes. **Decision:** keep as current best.
+> **Agrees with hypothesis:** yes. 
+> **Decision:** keep as current best.
 
 Note the expected result names a *router diagnostic*, not just BPB — so the run can fail in an interpretable way (a BPB gain bought with router damage would have been a discard, not a keep). As I write this, I realize what I'm really describing is something like *active learning*: pick the next experiment to maximize information gain. Maybe that's the paradigm I'd advocate for AI scientists.
 
@@ -95,15 +89,7 @@ And I have to say, the output *looks* like research. A representative selection 
 >
 > **Why these two:** They preserve the simple "future supervision" insight without requiring data labels or a new optimizer. TOP wins the first follow-up slot because it can be implemented by gathering logits for future targets and adding a small pairwise ranking loss.
 
-The reading list it built is genuinely diverse and high-signal — selective token losses (Rho-1 style), multi-token and ranking objectives, JEPA-style latent targets, curriculum and data-ordering tricks — and the queue is sensibly prioritized by implementation cost. It even surfaced a real repo-specific insight on its own: the training objective and the eval metric don't line up. Training minimizes the mean cross-entropy over *all* target tokens,
-
-$$\mathcal{L}_{\text{train}} = \frac{1}{N}\sum_{t=1}^{N} \text{CE}_t,$$
-
-while the benchmark (reading the actual `evaluate_bpb`) sums cross-entropy over only the *non-special* tokens and normalizes by total bytes,
-
-$$\text{BPB} = \frac{1}{\ln 2}\cdot\frac{\sum_{t:\, b_t > 0} \text{CE}_t}{\sum_{t} b_t}, \qquad b_t = \text{byte length of token } t,$$
-
-so the zero-byte special tokens (BOS and friends) are dropped from the numerator entirely. Two mismatches fall out: training spends gradient on special tokens the metric ignores, and it normalizes per *token* rather than per *byte*. Codex's proposed one-line fix was to byte-weight the per-token CE; amusingly, when I worked through the evaluator above I think byte-weighting actually over-counts long tokens, and the cleaner alignment is just to mask the zero-byte targets — but either way, "objective ≠ metric" is exactly the kind of thing worth catching, and chasing it down is queued for the next phase.
+The reading list it built is genuinely diverse and high-signal — selective token losses (Rho-1 style), multi-token and ranking objectives, JEPA-style latent targets, curriculum and data-ordering tricks — and the queue is sensibly prioritized by implementation cost. One idea I found genuinely novel: a *byte-weighted* cross-entropy, where each token's loss is scaled by its byte length, on the reasoning that the eval metric (BPB) is measured per byte. I don't think it's especially well-motivated in the end — the standard per-token cross-entropy is already aligned with BPB up to a constant — and when we actually tried it, it didn't help. But I'd never seen it before, and "invent a plausible-looking loss I haven't seen" is at least a different failure mode from "tweak the learning rate."
 
 But when its ideas were actually implemented and tested, none of them earned a keep. My current guess is test-time compute: one night is enough to scan and rank a literature, but probably not enough to iterate on any single idea until the finicky details that make a paper's trick work are faithfully reproduced. I'd honestly like to be wrong here, and I want to rerun this loop someday with a much bigger inference budget.
 
@@ -118,12 +104,19 @@ The details follow.
 
 ### The speedrun
 
-The starting point is deliberately boring: an 8-layer, 768-dim transformer, 16 experts with top-2 routing and softmax token-choice, GQA + RoPE + QK-norm. From there, Codex worked through the intervention queue. The leaderboard at the top of the post lists every run that became the new best; rather than narrate all ~30 runs, here is the progression at a glance and then the three stories I think teach the most.
+The starting point is deliberately boring: an 8-layer, 768-dim transformer, 16 experts with top-2 routing and softmax token-choice, GQA + RoPE + QK-norm. From there, Codex worked through the intervention queue. Here is the full leaderboard — every run that became the new best (math and code for each in Appendix A); rather than narrate all ~30 runs, I'll then tell the three stories I think teach the most.
 
-<figure>
-  <img src="/assets/images/speedrun_progression.png" alt="Phase 1 fixed-wall leaderboard progression from 0.9549 to 0.9382 BPB across eight interventions">
-  <figcaption>The speedrun staircase. Eight successive fixed-wall bests, cumulative −1.75% BPB. Not shown: the much larger number of runs that died on this hill. Math and code for each intervention are in Appendix A.</figcaption>
-</figure>
+| # | intervention | val BPB | Δ vs prev | cumulative |
+|---|---|---|---|---|
+| 0 | clean simple backbone, LR 0.003 | 0.954881 | — | — |
+| 1 | fixed value mix $$0.5 v_1 + 0.5 v_\ell$$ | 0.947597 | 0.763% | 0.763% |
+| 2 | value mix $$0.75 v_1 + 0.25 v_\ell$$ | 0.945791 | 0.191% | 0.952% |
+| 3 | sigmoid affinities + expert bias + load-balance 0.003 | 0.942848 | 0.311% | 1.260% |
+| 4 | exclusive self-attention | 0.940518 | 0.247% | 1.504% |
+| 5 | headwise attention gate, init 0.95 | 0.940352 | 0.018% | 1.522% |
+| 6 | headwise attention gate, init 0.98 | 0.940076 | 0.029% | 1.550% |
+| 7 | first FFN layer dense | 0.938510 | 0.167% | 1.714% |
+| 8 | first two FFN layers dense | 0.938179 | 0.035% | **1.749%** |
 
 #### Story 1: the value residual that failed, and the diagnostic that explained why
 
@@ -192,12 +185,20 @@ So maybe I was wrong: sparser is not always better, even with effectively infini
 | F3 | 352M | 7.0B | 0.765974 | — | — |
 | F4 | 565M | 11.3B | 0.736565 | — | — |
 
+Since each size is trained roughly Chinchilla-optimally (~20 tokens per active parameter), I can put all five full-recipe points on a single compute axis, $$C = 6ND$$ FLOPs (with $$N$$ active params and $$D$$ tokens), and ask whether they follow a scaling law. The usual form is a power law with an irreducible-loss offset,
+
+$$L(C) = \frac{A}{C^{\alpha}} + B.$$
+
+Fitting this to the four smaller points (S75–F3) and holding out F4 turns out to be instructive: with only four points the offset $$B$$ is badly under-determined — left unconstrained it runs to a nonsensical negative value, and the moment I bound it to be physical it collapses to $$B = 0$$. In other words, over this ~20× span of fitted compute the data simply don't yet bend enough to pin down a floor; they're well described by a plain power law, $$L \approx 0.888\,(C/10^{18})^{-0.055}$$. The exponent is tiny — loss falls slowly in compute, as it always does for language models — but the fit is clean (residuals under 0.005 BPB).
+
+Extrapolating that fit out to F4's compute ($$3.8\times10^{19}$$ FLOPs, ~2.6× beyond the last fitted point) predicts BPB **0.728**, while the actual F4 run came in at **0.737** — about **1.2% higher** than the trend. So the held-out point lands close, but on the *worse* side: F4 slightly underperforms its own extrapolation. That's the expected direction if F4 is a touch undertrained — recall its lower-LR arm was aborted before finishing — so I read this less as "the scaling law broke" and more as "I didn't tune F4 as carefully as the smaller points." Either way, a single held-out decade of compute landing within ~1% is more than I expected from five single-seed runs.
+
 <figure>
-  <img src="/assets/images/scaling_full_vs_simple.png" alt="Left: compute-optimal validation BPB vs active parameters for the full recipe (S75 through F4), the simple control (S75 through F2), and the all-MoE ablation (S75 through F2, with a router warning marker at F1). Right: grouped bars of relative BPB reduction vs the simple control — full recipe: 1.49%, tie, 2.72%; all-MoE: 1.83%, 1.87%, 2.36%">
-  <figcaption>Left: the compute-optimal curves. The full recipe scales smoothly to 565M active params with healthy routing throughout; the dashed all-MoE ablation (next section) is the same recipe minus the dense stem. Right: the architecture gap vs the simple control. The full recipe's gap is scale-positive but non-monotone, with a dead tie at F1; the all-MoE gap is consistent at every size. The non-monotonicity was the dense stem's doing.</figcaption>
+  <img src="/assets/images/scaling_full_vs_simple.png" alt="Compute-optimal validation BPB versus training FLOPs. The full-recipe points (S75 through F4) follow a blue power-law fit trained on S75 through F3, drawn solid and extrapolated as a dotted line to F4, where the predicted 0.728 sits just below the actual 0.737. The simple control and all-MoE ablation curves run from S75 to F2.">
+  <figcaption>Compute-optimal scaling on a $$C=6ND$$ FLOPs axis. The blue power-law fit on S75–F3 (solid, dotted past F3) extrapolates to F4 within ~1.2% — the open circle is the prediction, the filled point the actual. The full recipe scales smoothly to 565M active params with healthy routing throughout; the all-MoE ablation (dashed green, next section) drops the dense stem.</figcaption>
 </figure>
 
-A few observations:
+A few more observations:
 
 **The stack scales mechanically and stays healthy.** Up to 565M active (3.3B total) parameters, there were no divergences, no router collapse, and near-uniform max-layer expert load at every size. That sounds like faint praise, but it isn't: the simple control at F2 suffered repeated transient loss spikes above 6 during training and finished with a mean load CV of 0.52, against the full recipe's 0.075. Part of what the intervention stack buys is apparently not lower loss but *lower variance and router sanity at scale* — which, at real scale, is worth more than the BPB itself, since a diverged run returns nothing.
 
@@ -207,7 +208,7 @@ A few observations:
 
 The two-dense stem is a crutch, and in the long run I'd like to drop it — once I've learned the modern tricks for stabilizing pure MoEs (Quantile Balancing, etc.), the early dense layers shouldn't be necessary. So I ran the **all-MoE ablation**: the full intervention stack with the dense stem removed, every FFN layer sparse. The result was the most surprising of the project, and it's what made me rewrite my reading of the whole curve.
 
-At small scale, all-MoE *wins*: it beats the two-dense recipe by 0.0031 BPB at S75 and by a striking 0.0167 BPB at F1 (0.875 vs 0.892). Recompute the gap-vs-simple curve using all-MoE instead, and the embarrassing non-monotonicity nearly vanishes — 1.83% at S75, 1.87% at F1, 2.36% at F2 (the green bars in the figure above). In other words, the *quality* gain from the intervention bundle was consistent across scales all along; the F1 tie was the dense stem quietly giving that gain back. Under the fixed-wall speedrun, the stem's throughput advantage hid this completely; under compute-optimal budgets, where speed buys nothing, the first two dense layers turn out to be a quality *cost* at small scale.
+At small scale, all-MoE *wins*: it beats the two-dense recipe by 0.0031 BPB at S75 and by a striking 0.0167 BPB at F1 (0.875 vs 0.892) — that's the dashed green curve dipping below the blue one at the left of the figure. Recompute the gap against the simple control using all-MoE instead of the two-dense recipe, and the embarrassing non-monotonicity nearly vanishes: 1.83% at S75, 1.87% at F1, 2.36% at F2. In other words, the *quality* gain from the intervention bundle was consistent across scales all along; the F1 tie was the dense stem quietly giving that gain back. Under the fixed-wall speedrun, the stem's throughput advantage hid this completely; under compute-optimal budgets, where speed buys nothing, the first two dense layers turn out to be a quality *cost* at small scale.
 
 But — and this is why I can't just delete the stem yet — the all-MoE F1 run finished with one router layer at max load 0.253, just over my 0.25 safety threshold, the only compute-optimal run in the whole project to cross it. And at F2 all-MoE flips to *losing*: 0.0031 BPB worse and meaningfully slower (23.5% vs 25.7% MFU, since every layer now pays dispatch overhead). The pattern across the three sizes is uncomfortable: at LR 0.003 the all-MoE model grows a hot layer as it scales; at F2's gentler LR 0.001 it stays clean but can't keep up. Either you flirt with instability or you pay a tax to avoid it. Seen this way, the dense stem was never really a quality intervention — it's a *stabilizer* whose price grows with the compute budget, which is presumably why DeepSeek-V3 (trained at fixed token budgets, not fixed wall-clock) still ships dense early layers: at their scale, the insurance is worth it.
 
@@ -218,7 +219,7 @@ The model I actually want — fully sparse, no crutch, stable at every size — 
 
 Working with an AI agent on a research project was genuinely fun, and it made the whole learning experience much faster. For my own benefit, let me record where I land on "AI as an AI researcher" right now:
 
-**Great at:** execution fidelity, log discipline, and *negative-result hygiene*. It never quietly dropped a failed run, always wrote down matched-step comparisons with exact numbers, aborted runs against pre-registered criteria instead of hope, and once spent a whole diagnostic run instrumenting gradients to figure out *why* an idea failed rather than just recording *that* it did (this took some context engineering on my part; see Story 1). A surprising fraction of human research pathology is simply absent by default.
+**Great at:** execution fidelity, log discipline, and *negative-result hygiene*. It never quietly dropped a failed run, always wrote down matched-step comparisons with exact numbers, aborted runs against criteria written down in advance instead of on hope, and once spent a whole diagnostic run instrumenting gradients to figure out *why* an idea failed rather than just recording *that* it did (this took some context engineering on my part; see Story 1). A surprising fraction of human research pathology is simply absent by default.
 
 **Bad at:** knowing which question is worth asking next. Its failure mode isn't laziness — it's a kind of diligent myopia, generating an endless sequence of locally-justified next steps down whatever gradient is in front of it (finer LR grids, an eighth depth-scaling variant). And when I explicitly asked for creativity via the literature-search program, I got ideas that *sounded* interesting but didn't land — plausibly for lack of iteration compute, as I keep saying.
 
@@ -340,7 +341,7 @@ class Block(nn.Module):
 
 For completeness, everything that was tried and rejected in the clean lineage, with the one-line reason. Learned scalar first-value residual (disturbed routing before helping; see Story 1). Learned and normalized-learned value mixes (stabilizable by the sigmoid/bias router, but quality never matched the fixed mix). Aggressive fixed mixes 2:1, 3:1 (worse matched-step loss even with a healthy router — a quality failure, not a stability one). Fine-grained experts 32/top-4/896 (lost three times, ~0.018 BPB, despite cleaner per-expert load). Sigmoid affinities *without* bias (early matched-step edge that evaporated by run end). Softmax + light load-balance control (the run that earned the router its keep). Eight depth-scaling variants (every placement of $$1/\sqrt{\ell}$$ lost; internal worst, output-side least bad; consistent story: this model wants full-amplitude branches). Centered $$2\sigma$$ attention gate (won warmup, lost training). Third dense layer (saturation). Attention-gate init 0.99 (tie with 0.98, kept 0.98). E ∈ {4, 8, 32, 64, 128} (the U-curve). LRs 0.01 and 0.001 at 91M fixed-wall, 0.003 and 0.000333 at F2, 0.003 at F3, 0.0003 at F4 (the moving optimum).
 
-Every one of these has a full pre-registered entry in the research log. The discard pile is the dataset; the leaderboard is just its argmax.
+Every one of these has a full entry in the research log, hypothesis written down before the run. The discard pile is the dataset; the leaderboard is just its argmax.
 
 ---
 
