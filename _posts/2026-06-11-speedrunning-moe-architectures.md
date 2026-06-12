@@ -20,7 +20,7 @@ After the [diffusion LM project](/blog/how-long-ar-before-diffusion/), I felt li
 
 **Tl;dr** I didn't manage to get autoresearch to generate interesting ideas that actually work. With Karpathy's `program.md`, Codex (5.5 xhigh) basically just swept a finer and finer grid of hyperparameters. I then iterated through a few versions of the program, eventually getting it to run literature search and propose research, but none of the ideas panned out in the end. This could well be a test-time-compute issue — I only let it work over one night max per variant. So in the end I did the idea-generation myself and asked Codex to implement techniques like XSA, gated attention, and so on. The one trick Codex found on its own that did work: under a fixed wall-clock budget, making the first two FFN layers dense helps, mostly because it trains faster. To see whether these interventions survive at scale, I wrote a second program for scaling-law experiments, asked Codex to implement and babysit the runs, and collected the results. Excitingly, the gains look real at ~10× the original scale and aren't diminishing! Though of course we'd need to go well beyond the $$\sim 4\times 10^{19}$$ FLOPs of our biggest run to be sure.
 
-For the impatient, here is the whole speedrun at a glance — every intervention that became the new fixed-wall best, stacking up to −1.75% BPB (how each works: Appendix A; how they were found: Phase 1):
+Here is the whole speedrun at a glance — every intervention that became the new fixed-wall best, stacking up to −1.75% BPB (how each works: Appendix A; how they were found: Phase 1):
 
 <figure>
   <img src="/assets/images/speedrun_progression.png" alt="Phase 1 fixed-wall leaderboard progression from 0.9549 to 0.9382 BPB across eight interventions">
