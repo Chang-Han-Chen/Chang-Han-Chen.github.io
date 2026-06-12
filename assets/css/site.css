@@ -249,7 +249,7 @@ figcaption {
 .profile img {
   width: 150px;
   height: 150px;
-  border-radius: 50%;
+  border-radius: 0;
   object-fit: cover;
   border: 1px solid var(--border);
 }

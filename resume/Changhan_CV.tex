@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Chang-Han Chen -- Curriculum Vitae
+%% Clean single-column layout. Compile with pdflatex (run twice).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=18mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% ---- Colors -----------------------------------------------------------
+\definecolor{accent}{HTML}{1A4E8A}   % section headings / links
+\definecolor{rule}{HTML}{1A4E8A}
+\definecolor{hl}{HTML}{B22222}        % subtle highlight (dates, key facts)
+
+\hypersetup{colorlinks=true, urlcolor=accent, linkcolor=accent}
+
+% ---- Layout -----------------------------------------------------------
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+
+% Section headings: full-width, colored, bold, with a rule underneath.
+\titleformat{\section}
+  {\large\bfseries\color{accent}}{}{0pt}{}[\vspace{1pt}{\color{rule}\titlerule[1pt]}]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+% List styling: tight, no extra left indent.
+\setlist[itemize]{leftmargin=1.4em, itemsep=2pt, topsep=2pt, parsep=0pt}
+
+% ---- Helper macros ----------------------------------------------------
+% \entry{title}{right-aligned date}
+\newcommand{\entry}[2]{\textbf{#1}\hfill{\small #2}}
+% \hl{text} -- subtle highlight
+\newcommand{\hl}[1]{\textcolor{hl}{#1}}
+
+\begin{document}
+
+% ======================= Header =======================================
+{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: June 2026}
+
+\vspace{4pt}
+{\color{rule}\hrule height 1pt}
+\vspace{6pt}
+
+\begin{tabular}{@{}l@{}}
+Tel: 608-886-6081 \quad\textbullet\quad
+E-mail: \href{mailto:changhanc@berkeley.edu}{changhanc@berkeley.edu} \quad\textbullet\quad
+Web: \href{https://chang-han-chen.github.io}{chang-han-chen.github.io}
+\end{tabular}
+
+% ======================= Education ====================================
+\section{Education}
+\begin{itemize}
+  \item \entry{Ph.D. in Theoretical Physics, University of California, Berkeley}{expected \hl{end of 2026}}
+  \item \entry{B.Sc. in Physics and Mathematics, Massachusetts Institute of Technology}{2022}\\
+        GPA \hl{4.9/5}; Morse/Orloff award for best senior thesis.
+\end{itemize}
+
+% ======================= Skills =======================================
+\section{Skills (besides physics)}
+\begin{itemize}
+  \item \textbf{Research:} von Neumann algebras, random matrix and free probability, language model training.
+  \item \textbf{Coursework:} \href{https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/}{algorithm design},
+        \href{https://www.argmin.net/p/convex-optimization-in-the-age-of}{convex optimization},
+        probability theory, statistical learning theory.
+\end{itemize}
+
+% ======================= Research Interest ============================
+\section{Research Interest}
+\textit{What is the most puzzling, mysterious aspect of our universe?}
+
+\vspace{4pt}
+\textbf{Universality of holography: GR + QM = hologram?}
+Instead of betting on one particular theory such as string theory or loop quantum gravity that are
+``invisible'' to current technology, I believe in the universality of holography: \emph{any}
+non-perturbative quantum theory consistent with general relativity is holographic, i.e.\ the
+information in quantum gravity lives on the boundary. The goal of my Ph.D.\ is to explore as many
+aspects of this universality as possible, e.g.\ two-dimensional toy models and von Neumann algebras.
+
+\vspace{4pt}
+For my recent interest in AI, see \href{https://chang-han-chen.github.io/blog/a-new-chapter/}{this blog}.
+
+% ======================= Selected Projects ============================
+\section{Selected Projects}
+\begin{itemize}
+  \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{hl}{MoE autoresearch}}}{2026}\\
+        Explored LLM-agent-driven ``autoresearch'' on autoregressive mixture-of-experts transformers,
+        stacking interventions to a 1.75\% bits-per-byte gain that persists under compute-optimal scaling.
+  \item \entry{\href{https://github.com/Chang-Han-Chen/sample-efficient-dlm}{\textcolor{black}{Optimal block-size curriculum for diffusion language models}}}{2026 Spring}\\
+        Designed a block-size curriculum for pretraining block-diffusion language models, sweeping the
+        autoregressive-vs-diffusion training budget and finding a consistent sample-efficiency optimum near 30\%.
+  \item \entry{\href{https://arxiv.org/abs/2506.04311}{\textcolor{black}{An apologia for islands}}\ \normalfont(with S.\ Antonini, H.\ Maxfield, G.\ Penington)}{2025 Spring}\\
+        Proved that entanglement islands and the Page curve emerge even with \emph{massless} gravitons and
+        no external reservoir, using gauge-invariant gravitational operators to show black-hole interior
+        operators are non-perturbatively encoded in Hawking radiation.
+  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{hl}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{2024 Spring}\\
+        Resolved prevalent misconceptions and pioneered practical applications of abstract mathematical
+        tools to cosmological modeling, with work that became fairly influential in the field.
+  \item \entry{\href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{Geometry and entanglement in AdS/CFT and beyond}}}{2022 Spring}\\
+        Independent senior thesis, awarded MIT's Morse/Orloff prize for best senior thesis in theoretical physics.
+\end{itemize}
+
+% ======================= Honors and Awards ============================
+\section{Honors and Awards}
+\begin{itemize}
+  \item \entry{\href{https://physics.mit.edu/academic-programs/student-awards/}{Morse/Orloff Research Award} -- best senior thesis in theoretical physics, MIT}{2022}
+  \item \entry{Gold medal, \href{https://ipho2018.pt/content/exams}{International Physics Olympiad} (IPhO)}{2018}
+\end{itemize}
+
+% ======================= References ===================================
+\section{References}
+\begin{tabular}{@{}lll@{}}
+Prof.\ \textbf{Hong Liu} & Prof.\ \textbf{Geoff Penington} & Prof.\ \textbf{Aron Wall}\\
+MIT & UC Berkeley & U.\ of Cambridge\\
+\href{mailto:hong_liu@mit.edu}{hong\_liu@mit.edu} &
+\href{mailto:geoffp@berkeley.edu}{geoffp@berkeley.edu} &
+\href{mailto:aroncwall@gmail.com}{aroncwall@gmail.com}\\
+\end{tabular}
+
+\end{document}
