@@ -2,11 +2,11 @@
 title: "MoE autoresearch"
 layout: post
 date: 2026-06-11
-excerpt: "I tried out autoresearch for MoE architecture, and then validated the gains via scaling laws "
+excerpt: "My first attempt at autoresearch and scaling laws "
 permalink: /blog/moe-speedrun-scaling/
 ---
 
-*Couldn't get agent to come up with ingenious ideas yet, but they are very useful for babysitting the runs.*
+*My first attempt at autoresearch and scaling laws*
 {: .post-subtitle}
 
 <details class="post-toc" markdown="1">
@@ -20,57 +20,7 @@ Based on the experience of [diffusion LM project](/blog/how-long-ar-before-diffu
 
 Tl;dr I didn't successfully get autoresearch to generate interesting ideas that work. With Karpathy's program.md Codex 5.5 xhigh basically just swept a finer grid of hyperparameters. I then iterated a few versions, got them to iterate on literature search and research, but still none of the ideas work eventually. Of course this could be due to the insufficiency of test time compute; I only let them work over one night max. In the end, I just did the research myself, asked it to implement techniques like XSA, gated attention, etc. One trick Codex found and did work is that under fixed-wall-clock constraint, first-two-dense-layer is helpful due to faster training. To see if these interventions work at scale, I wrote a plan for scaling laws, asked codex to implement and babysit the runs, and collected the results. Excitingly, the gain of our interventions look real at 10x the original scale and not diminishing! But of course we definitely need to go much beyond the $$\sim 4\times 10^{19}$$ FLOPs of our biggest run to be sure. 
 
-A bunch of disclaimers upfront: our MoE router might be suboptimally tuned, but I put significant effort into making it at least look "healthy"; our scaling laws have fewer data points than I'd like; everything is single-seed; no layer-specific hyperparameters (so the embedding layer is likely undertrained) like &mu;P, but we did sweep global learning rate at each scale. 
-
-Still, I'm writing it up anyway. This is a learning process, and hopefully by exposing the process (mistakes included), I can collect on-policy, dense reward signals from experts out there. Let me know if you have any feedback!
-
-The project has two halves, and so does this post:
-
-1. **A speedrun.** Starting from a deliberately stripped-down MoE transformer, Codex ran dozens of architecture experiments under a fixed 7.5-minute training budget on 4 GPUs, following a protocol document I wrote, testing intervention ideas that mostly came from my paper reading. We kept a stack of five, improving validation bits-per-byte by 1.75%.
-2. **A scaling check.** We then asked the question that toy-scale architecture work usually dodges: do these wins survive when you scale the model up and train each size to a compute-optimal token budget, with paired controls?
-
-**The question I care about most: are architecture wins from a 7.5-minute toy benchmark real — do they persist under a compute-optimal scaling protocol with paired controls?**
-{: .notice--info}
-
-The answer, at the scale I could afford: **mostly yes, with an asterisk**. The full intervention stack beats the simple backbone at 76M active parameters (by 1.49% relative BPB), is a dead tie at 91M, and wins clearly at 185M (by 2.72%) — so the gap is scale-positive but non-monotone, and the strongest claim leans on a single point. The stack also buys something the headline number hides: at 185M the simple control went through repeated loss spikes and ended with visibly unhealthy routing, while the full recipe stayed clean at every size up to 565M active parameters. A late-arriving ablation then rearranged my whole reading of the curve: most of the non-monotonicity traces to *one* intervention (the dense stem), and removing it both fixes the awkward middle point *and* exposes the stability problem that motivates what I want to do next.
-
-## The setup
-
-Everything runs on [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) harness, lightly adapted: a single `train.py` (the only file the agent may modify), a frozen `prepare.py` that downloads data and defines the benchmark, and two log files the agent must maintain. Data is [ClimbMix](https://huggingface.co/datasets/karpathy/climbmix-400b-shuffle), tokenized with a custom 8192-vocab BPE, sequence length 2048. Hardware is a 4×H100 node rented from VESSL AI and Vast.ai — as promised in my [first post](/blog/a-new-chapter/), this kind of research really is doable on rented GPUs and a student budget, at least until the scaling sweep at the end.
-
-The benchmark metric is **validation bits-per-byte (BPB)**: per-token cross-entropy summed over the *bytes* of the target text, rather than averaged over tokens. This makes models with different tokenizers comparable and prevents an architecture from "winning" by exploiting token granularity. Lower is better; at this scale, differences of ~0.001 BPB are meaningful and reproducible, which still surprises me.
-
-The model family is a **mixture-of-experts (MoE) transformer**. Quick orientation if you haven't trained one: instead of every token passing through the same feed-forward network (FFN), each token is *routed* to a small subset of parallel FFNs ("experts") — here, the top 2 of 16 — so the model has far more total parameters than it spends compute on per token. We say it has 438M *total* but only 91M *active* parameters. The catch is the **router**, a tiny linear layer that decides which experts see which tokens. Routers fail in characteristic ways — most famously *collapse*, where a few experts hog all the traffic and the rest atrophy — so MoE experiments must track router diagnostics (load balance, entropy, per-expert load) alongside the loss, or you end up attributing routing pathologies to architecture choices. This bookkeeping is a recurring character in everything below.
-
-The speedrun protocol: each run trains for a fixed **450 seconds of measured wall-clock training time**, then evaluates BPB. Fixed *time*, not fixed steps — so an intervention can win either by learning more per step or by being faster. This double-edged property becomes a real confound later; the protocol's answer is "matched-step diagnostics," which we'll get to.
-
-## The contract: research-by-program
-
-Here is the workflow, which is the part of this project I find most interesting. I do not sit at the terminal supervising runs. Instead I write a `program.md` — a protocol document — and Codex (5.5 xhigh, for everything reported here) reads it, edits `train.py`, launches runs, parses the logs, and appends structured entries to a `research_log.md`. The program is a contract: it specifies what the agent may and may not touch, how to decide keep-vs-discard, and — crucially — the *epistemic* discipline. From the architecture program:
-
-> The key discipline is: **pre-register the hypothesis before launching the run, then update the belief after reading the result**. Do not simply try changes because they are fashionable or because they appeared in a speedrun.
-
-Every run entry must contain a pre-run hypothesis (a mechanism, not a vibe), an expected result *including at least one predicted diagnostic besides BPB*, the observed result, an interpretation, an explicit `agrees with hypothesis: yes/no/partial`, and a decision. My favorite line in the program — the kind of sentence you only write *after* watching an agent burn GPU-hours on undirected fiddling:
-
-> A run without an interpretation is not a scientific run; it is just a CUDA-powered coin toss.
-
-The program also hard-codes guardrails: the optimizer family is frozen (Muon for matrices, AdamW for the rest — only LR *values* may change), `prepare.py` and the metric are untouchable, and router-health thresholds define when a "win" must be marked `repair` instead of `keep` (e.g., any layer where one expert receives ≥25% of top-2 traffic over 16 experts).
-
-### Confession: the program took many iterations, and Codex is not the scientist
-
-I want to be honest about the division of labor, because I think it's the most useful data point in this post for anyone considering this workflow.
-
-Codex did not need help with execution. It wrote correct grouped-matmul MoE dispatch code, managed git hygiene, parsed its own logs, aborted bad runs early against pre-registered criteria, and maintained the research log with a discipline I frankly envy. What it needed constant help with was **research taste**. With Karpathy's reference `program.md` essentially as-is, Codex just swept a finer and finer hyperparameter grid — each run a locally sensible "one more bracket point," and collectively a pile of compute spent polishing the fourth decimal of a learning rate. Nothing in its behavior was wrong, exactly. It just wasn't *research*. I rewrote the program over several iterations to push exploration: explicit intervention queues, a coarse-only 3× LR grid rule, instructions like "do not continue this thread unless the result creates a new clear failure mode." I even got it running literature-search-and-select loops, which produced plausible, well-motivated candidate ideas — and essentially none of them worked when tested. A fair caveat: I gave it at most one night of test-time compute per attempt, so maybe this is an inference-budget problem rather than a capability one. I'd honestly like to be wrong here.
-
-So in the end I did the idea generation myself, from paper reading. Of the five interventions in the final stack, I proposed four — the value-mix family, the sigmoid/bias router, exclusive self-attention, and the headwise attention gate all entered through the program's suggested queue. **Exactly one adopted idea originated with Codex: making the first FFN layers dense.** It's a good trick, mainly because it trains faster under the fixed wall clock (more on the quality side later — the scaling phase has things to say about it). DeepSeek-V3 does the same thing with three dense layers; Codex found two was optimal at this scale, and tested three, which lost. But the scorecard matters for calibrating claims about "AI doing AI research": in this project, Codex was a tireless, rigorous research *executor* and run babysitter, not a research *director*.
-
-One more honesty note: the research log I'm quoting was **reset** partway through the project. The first lineage of experiments accumulated a feature-rich stack (value embeddings, logit softcaps, …) whose components had never been individually validated, and when I grew suspicious, we stripped everything back to a minimal backbone and re-justified each component from scratch. Everything below is from the clean second lineage. The first lineage survives only in git history and in my humility.
-
-## Phase 1: the speedrun
-
-The starting point is deliberately boring: an 8-layer, 768-dim transformer, 16 experts with top-2 routing and softmax token-choice, GQA + RoPE + QK-norm, no value tricks, no gates. The first three runs just bracket the AdamW peak LR on a 3× grid — `0.01` was too hot (router load badly skewed), `0.001` undertrained catastrophically (BPB 1.031!), and `0.003` became the clean baseline at **0.954881 BPB**. Worth pausing on that middle number: at fixed wall-clock, a 3× LR error costs *vastly* more than any architecture intervention we found. Architecture research at fixed budget is conditional on getting LR roughly right, which is why the program forces an LR re-check whenever model scale changes.
-
-From there, Codex worked through the intervention queue. Rather than narrate all ~30 runs, here is the leaderboard — every run that became the new best — and then the three stories I think teach the most.
+For the impatient, here is the speedrun leaderboard — every intervention that became the new fixed-wall best (how each works: Appendix A; how they were found: Phase 1):
 
 | # | intervention | val BPB | Δ vs prev | cumulative |
 |---|---|---|---|---|
@@ -84,12 +34,66 @@ From there, Codex worked through the intervention queue. Rather than narrate all
 | 7 | first FFN layer dense | 0.938510 | 0.167% | 1.714% |
 | 8 | first two FFN layers dense | 0.938179 | 0.035% | **1.749%** |
 
+A bunch of disclaimers upfront: our MoE router might be suboptimally tuned, but I put significant effort into making it at least look "healthy"; our scaling laws have fewer data points than I'd like; everything is single-seed; no layer-specific hyperparameters (so the embedding layer is likely undertrained) like &mu;P, but we did sweep global learning rate at each scale. 
+
+Still, I'm writing it up anyway. This is a learning process, and hopefully by exposing the process (mistakes included), I can collect on-policy, dense reward signals from experts out there. Let me know if you have any feedback!
+
+The project has two halves, and so does this post:
+
+1. **A speedrun.** Karpathy's autoresearch style. Starting from a deliberately stripped-down MoE transformer, Codex ran dozens of architecture experiments under a fixed 7.5-minute training budget on 4 H100 GPUs, following a protocol document I wrote. We kept a stack of 8 ideas, most of which came from myself though, improving validation bits-per-byte by 1.75%.
+2. **A scaling check.** We then asked the question that toy-scale architecture work usually dodges: do these wins survive when you scale the model up and train each size to a compute-optimal token budget, with paired controls?
+
+**Question: are architecture wins from a 7.5-minute speedrun real? Do they persist under a compute-optimal scaling?**
+{: .notice--info}
+
+The answer, at the scale I could afford: **mostly yes**. The full intervention stack beats the simple backbone at 76M active parameters (by 1.49% relative BPB) wins clearly at 185M (by 2.72%), but ties at 91M. So, the gap is scale-positive but non-monotone. My observation is that most of the gain may come from the **stability** of training. For the baseline architecture, we saw repeated loss spikes and ended with visibly unhealthy routing even at 185M-active scale, while the recipe with our interventions stayed clean at every size up to 565M active parameters. A late-arriving ablation then rearranged my whole reading of the curve: most of the non-monotonicity traces to *one* intervention (the dense stem), and removing it both fixes the awkward middle point *and* exposes the stability problem that motivates what I want to do next.
+
+## Phase 1: speedrun
+
+### Setup
+
+Everything runs on [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) harness, lightly adapted: a single `train.py` (the only file the agent may modify), a frozen `prepare.py` that downloads data and defines the benchmark, and two log files the agent must maintain. Data is [ClimbMix](https://huggingface.co/datasets/karpathy/climbmix-400b-shuffle), tokenized with a custom 8192-vocab BPE, sequence length 2048. Hardware is a 4×H100 node rented from VESSL AI and Vast.ai. As promised in my [first post](/blog/a-new-chapter/), this kind of research really is *doable* on a PhD student budget (but very tight😱).
+
+The benchmark metric is **validation bits-per-byte (BPB)**, following Karpathy: per-token cross-entropy summed over the *bytes* of the target text, rather than averaged over tokens. This makes models with different tokenizers comparable and prevents an architecture from "winning" by exploiting token granularity. Lower is better; at this scale, differences of ~0.001 BPB are meaningful and reproducible, which still surprises me.
+
+The model family is a **mixture-of-experts (MoE) transformer**. Quick reminder on MoE: instead of every token passing through the same feed-forward network (FFN), each token is *routed* to a small subset of parallel FFNs ("experts"), so the model has far more total parameters than it spends compute on per token. In our case, each forward pass picks the top 2 of 16 experts, and the model has 438M *total* but only 91M *active* parameters. The catch is the **router**, a tiny linear layer that decides which experts see which tokens. It is notoriously hard to stably train the routers; a common instability is that a few experts happen to get routed more, get more gradient signals, perform better, and therefore get routed even more often. So, MoE experiments must track router health (load balance, entropy, per-expert load) alongside the loss. In my own experiments, many architecture interventions for dense transformers don't work for MoE because they somehow mess up the router; for example, learnable value residual.
+
+The speedrun protocol: each run trains for a fixed **450 seconds of measured wall-clock training time**, then evaluates validation BPB. Fixed *time*, not fixed steps. So an intervention can win either by learning more per step or by being faster. This feels like a more practical constraint, especially for MoE, because their architecture (e.g. sparsity) can often greatly impact hardware efficiency (MFU, ...).
+
+### My program.md
+
+Here is the workflow, which is the part of this project I find most interesting. I do not sit at the terminal supervising runs. Instead I write a `program.md` — a protocol document — and Codex (5.5 xhigh, for everything reported here) reads it, edits `train.py`, launches runs, parses the logs, and appends structured entries to a `research_log.md`. The program is a contract: it specifies what the agent may and may not touch, how to decide keep-vs-discard, and — crucially — the *epistemic* discipline. From the architecture program:
+
+> The key discipline is: **pre-register the hypothesis before launching the run, then update the belief after reading the result**. Do not simply try changes because they are fashionable or because they appeared in a speedrun.
+
+Every run entry must contain a pre-run hypothesis (a mechanism, not a vibe), an expected result *including at least one predicted diagnostic besides BPB*, the observed result, an interpretation, an explicit `agrees with hypothesis: yes/no/partial`, and a decision. My favorite line in the program — the kind of sentence you only write *after* watching an agent burn GPU-hours on undirected fiddling:
+
+> A run without an interpretation is not a scientific run; it is just a CUDA-powered coin toss.
+
+The program also hard-codes guardrails: the optimizer family is frozen (Muon for matrices, AdamW for the rest — only LR *values* may change), `prepare.py` and the metric are untouchable, and router-health thresholds define when a "win" must be marked `repair` instead of `keep` (e.g., any layer where one expert receives ≥25% of top-2 traffic over 16 experts).
+
+I want to be honest about the division of labor, because I think it's the most useful data point in this post for anyone considering this workflow.
+
+Codex did not need help with execution. It wrote correct grouped-matmul MoE dispatch code, managed git hygiene, parsed its own logs, aborted bad runs early against pre-registered criteria, and maintained the research log with a discipline I frankly envy. What it needed constant help with was **research taste**. With Karpathy's reference `program.md` essentially as-is, Codex just swept a finer and finer hyperparameter grid — each run a locally sensible "one more bracket point," and collectively a pile of compute spent polishing the fourth decimal of a learning rate. Nothing in its behavior was wrong, exactly. It just wasn't *research*. I rewrote the program over several iterations to push exploration: explicit intervention queues, a coarse-only 3× LR grid rule, instructions like "do not continue this thread unless the result creates a new clear failure mode."
+
+The most ambitious version of the program hands Codex the idea generation itself, with structure: run 20 search/reflection iterations, each scanning ~10 papers, selecting 2 one-sentence ideas with a written reason why those 2 beat the other 8, then updating the search keywords for the next iteration; afterwards, distill the 40 collected ideas through timed synthesis passes into a unified hypothesis and a ranked experiment queue, under a research filter the program calls "brutal: prefer ideas that can be stated in two sentences, implemented in a few lines, and tested with one clear diagnostic besides BPB." And I have to say, the output *looks* like research. The reading list is diverse and feels high-signal — selective token losses (Rho-1 style), multi-token and ranking objectives, JEPA-style latent targets, curriculum and data-ordering work — the queue is sensibly prioritized by implementation cost, and it even surfaced a genuine repo-specific insight on its own: we train mean token CE while evaluating byte-weighted BPB, so the training objective and the benchmark metric are misaligned by construction. But when its ideas were actually tried, none of them produced a keep. My current guess is test-time compute: I gave it one night max per attempt, which is enough to scan and rank a literature but probably not enough to iterate on any single idea until the details that make a paper's trick work are faithfully reproduced. I'd honestly like to be wrong here, and I want to rerun this loop with a much bigger inference budget someday.
+
+So in the end I did the idea generation myself, from paper reading. Of the five interventions in the final stack, I proposed four — the value-mix family, the sigmoid/bias router, exclusive self-attention, and the headwise attention gate all entered through the program's suggested queue. **Exactly one adopted idea originated with Codex: making the first FFN layers dense.** It's a good trick, mainly because it trains faster under the fixed wall clock (more on the quality side later — the scaling phase has things to say about it). DeepSeek-V3 does the same thing with three dense layers; Codex found two was optimal at this scale, and tested three, which lost. But the scorecard matters for calibrating claims about "AI doing AI research": in this project, Codex was a tireless, rigorous research *executor* and run babysitter, not a research *director*.
+
+One more honesty note: the research log I'm quoting was **reset** partway through the project. The first lineage of experiments accumulated a feature-rich stack (value embeddings, logit softcaps, …) whose components had never been individually validated, and when I grew suspicious, we stripped everything back to a minimal backbone and re-justified each component from scratch. Everything below is from the clean second lineage. The first lineage survives only in git history and in my humility.
+
+### The speedrun
+
+The starting point is deliberately boring: an 8-layer, 768-dim transformer, 16 experts with top-2 routing and softmax token-choice, GQA + RoPE + QK-norm, no value tricks, no gates. The first three runs just bracket the AdamW peak LR on a 3× grid — `0.01` was too hot (router load badly skewed), `0.001` undertrained catastrophically (BPB 1.031!), and `0.003` became the clean baseline at **0.954881 BPB**. Worth pausing on that middle number: at fixed wall-clock, a 3× LR error costs *vastly* more than any architecture intervention we found. Architecture research at fixed budget is conditional on getting LR roughly right, which is why the program forces an LR re-check whenever model scale changes.
+
+From there, Codex worked through the intervention queue. The leaderboard at the top of the post lists every run that became the new best; rather than narrate all ~30 runs, here is the progression at a glance and then the three stories I think teach the most.
+
 <figure>
   <img src="/assets/images/speedrun_progression.png" alt="Phase 1 fixed-wall leaderboard progression from 0.9549 to 0.9382 BPB across eight interventions">
   <figcaption>The speedrun staircase. Eight successive fixed-wall bests, cumulative −1.75% BPB. Not shown: the much larger number of runs that died on this hill. Math and code for each intervention are in Appendix A.</figcaption>
 </figure>
 
-### Story 1: the value residual that failed, and the diagnostic that explained why
+#### Story 1: the value residual that failed, and the diagnostic that explained why
 
 The first idea I queued was a [ResFormer](https://arxiv.org/abs/2410.17897)-style value residual: let later attention layers mix in the *first* layer's value tensor through a learned scalar per layer, initialized at zero. In dense transformers this reliably helps. Here, it didn't — matched-step loss was no better and router load concentrated. The interesting part is what the agent did next. Instead of shrugging and moving on, it added gradient instrumentation and ran a 120-second diagnostic with retained activation gradients, then wrote what I consider the best paragraph in the entire log:
 
@@ -97,7 +101,7 @@ The first idea I queued was a [ResFormer](https://arxiv.org/abs/2410.17897)-styl
 
 In other words: the mechanism story from the dense-model literature ("value residuals create a gradient highway to early layers") measurably did not transfer. The learned mixture was *changing the representations that later routers see*, destabilizing expert load before delivering any gradient-flow benefit — a failure mode that simply cannot exist in a dense model, because dense models have no router to disturb. The repair, two runs later, was almost comically blunt: don't learn the mixture at all. A **fixed** mix $$v = 0.75\,v_1 + 0.25\,v_\ell$$ — first-heavy, damped, with nothing for the optimizer to over-adapt — turned the idea from harmful to a 0.95% cumulative win. Learned, normalized-learned, and larger-ratio variants were all tested; all lost. I would not have guessed that the difference between "harmful" and "best win of the phase" was *removing* the learnable parameter.
 
-### Story 2: the router that collapsed on schedule, and the control that earned the win
+#### Story 2: the router that collapsed on schedule, and the control that earned the win
 
 The router thread is my favorite example of the pre-registration discipline paying off. The target was DeepSeek-V3-style routing ([sigmoid affinities](https://arxiv.org/abs/2412.19437) plus [auxiliary-loss-free expert bias](https://arxiv.org/abs/2408.15664)): score experts with independent sigmoids instead of a competitive softmax, and steer load not with a loss but with a non-gradient bias term that nudges selection toward underused experts.
 
@@ -113,7 +117,7 @@ Then the step most tempting to skip: Codex ran a **control** — same value mix,
 
 Without this control, the honest claim would have been "we changed two things and it got better." With it, the mechanism is isolated. This is the cheapest kind of rigor there is, and I had to put it in the program explicitly because nothing about a leaderboard rewards it.
 
-### Story 3: Codex's own idea, and the confound it had to defuse
+#### Story 3: Codex's own idea, and the confound it had to defuse
 
 After the attention-side wins (exclusive self-attention, then a near-identity headwise sigmoid gate — see Appendix A; the gate-init bracketing 0.95 → 0.98 → 0.99 is a tidy little study in itself, converging on "as close to identity as possible but not closer"), the agent proposed the one original idea that survived: **replace the first MoE FFN layers with plain dense SwiGLU layers** of matched active width. The hypothesis, in its words: early token representations may be "too raw for useful sparse routing," so spend the first layers on a dense transformation and save the experts for later layers where routing decisions are better-informed.
 
@@ -125,15 +129,23 @@ But notice the trap. Under a fixed wall clock, the two-dense model is faster, so
 
 So the dense stem is doing two things at once — a small genuine sample-efficiency gain (0.094% at matched steps) and a larger throughput gain (the rest of the fixed-wall delta). I like this run because it converts an ambiguous leaderboard entry into two cleanly separated claims. And as noted above, it independently rediscovers actual frontier practice: DeepSeek-V3 keeps its first three FFN layers dense, reportedly for exactly this early-routing-stability reason. (Hold this thought, though — the scaling phase has a plot twist waiting for the dense stem.)
 
-### The failure museum
+#### The failure museum
 
 The log contains far more discarded runs than kept ones, and some failures were expensive. The most instructive: I asked for depth-scaled residual scaling (multiply layer-$$\ell$$ branches by $$1/\sqrt{\ell}$$, a trick with decent dense-model pedigree), and **eight consecutive runs** tried every placement — pre-norm, branch-only, MLP-only quarter-power (a cute hypothesis: SwiGLU is roughly quadratic in input scale, so scale inputs by $$\ell^{-1/4}$$ to get an $$\ell^{-1/2}$$ branch), MLP+V, MLP+V+gate, V-only, V+gate, and finally output-side. Every variant lost. The post-mortem ordering is at least informative — internal scaling was catastrophic, output-side scaling merely bad, with a consistent moral: this model wants full-amplitude branches — and the family was finally closed with the log's dry "Close fixed deterministic layer scaling for now." In retrospect the family should have been capped at three runs in the program. And I have to own my half of it: reading the log carefully, at least two of the eight variants were *my* mid-flight requests, not the agent's ("iterate once more by also scaling the headwise attention gate as requested"). The sunk-cost gradient of locally-reasonable next-variants pulls on humans too; the difference is the agent writes it all down.
 
 Also in the museum: fine-grained experts (32 experts, top-4, half-width — preserves active FFN width, total expert width, and sparsity ratio), which DeepSeek-style scaling folklore says should help. It lost decisively *three times* — once early, once re-tested on top of the stabilized router stack in case the old router had been the bottleneck, and once more in the formal Phase 2 geometry check (0.953126 vs 0.935178, not close). Routing was perfectly healthy each time; the smaller experts just learned worse and dispatched slower at this scale and horizon. I file this under "folklore is scale-dependent" and would genuinely like to know where the crossover is.
 
-## Interlude: picking the geometry to scale
+## Phase 2: scaling laws
 
-Before scaling, two structured sweeps (these came from the second program, `program_june_ninth.md`, which is much more boring to read than the first — by design, since its job was specification rather than exploration). First, expert count at fixed top-2 and fixed active compute, E ∈ {4, 8, 16, 32, 64, 128}:
+This is the part of the project I was most excited about, and the part where I made my biggest methodological mistake. Phase 2 got its own program, `program_june_ninth.md` — much more boring to read than the first, by design, since its job was specification rather than exploration. It specifies three things: pick the MoE geometry to scale, scale the recipe across five sizes (F1–F5: depth 8→16, width 768→1792, 91M→852M active params) with paired controls, and decide the outcome by **pre-registered verdict definitions**, fixed before any scale run launched:
+
+> Call the architecture interventions "scaling" if `simple_minus_full` is positive at every completed depth, and the relative BPB reduction is flat or increasing, or only mildly decreasing. Call the gains "diminishing" if `simple_minus_full` shrinks monotonically with depth, or the depth-16 relative reduction is less than half the depth-8 one. Call the result "scale-dependent retuning needed" if full beats simple at small depth but loses at large depth, [or] router-safe status changes with size […]
+
+The "simple" curve is the paired control: identical depth, width, expert geometry, and optimizer, with all five interventions switched off and the baseline softmax router restored. Every claim below is full-vs-simple at matched scale, not "bigger model got better."
+
+### Picking the geometry to scale
+
+First, expert count at fixed top-2 and fixed active compute, E ∈ {4, 8, 16, 32, 64, 128}:
 
 <figure>
   <img src="/assets/images/sparsity_sweep.png" alt="Sparsity sweep: validation BPB is U-shaped in expert count with minimum at E=16; steps completed in fixed wall time decrease monotonically with expert count">
@@ -141,16 +153,6 @@ Before scaling, two structured sweeps (these came from the second program, `prog
 </figure>
 
 The shape is intuitive in hindsight: under fixed wall-clock, inactive parameters are not free — they cost optimizer state, memory traffic, and dispatch overhead, so E=64 and E=128 train stably but are hopelessly outrun. What I appreciate is the discipline at the bottom of the U: E=8 trails E=16 by only 0.003 BPB while being smaller and faster, and a pre-registered tie/scale-candidate rule existed to handle exactly this. (It didn't trigger — no contender came within 0.001 — but deciding the rule before seeing the data is the point.) E=16, top-2, 12.5% sparsity it is.
-
-## Phase 2: does any of this survive scaling?
-
-This is the part of the project I was most excited about, and the part where I made my biggest methodological mistake.
-
-The scaling program defines five sizes (F1–F5: depth 8→16, width 768→1792, 91M→852M active params) and — the part I'm gladest I wrote — **pre-registered verdict definitions**. Before any scale run launched, the program fixed what the words would mean:
-
-> Call the architecture interventions "scaling" if `simple_minus_full` is positive at every completed depth, and the relative BPB reduction is flat or increasing, or only mildly decreasing. Call the gains "diminishing" if `simple_minus_full` shrinks monotonically with depth, or the depth-16 relative reduction is less than half the depth-8 one. Call the result "scale-dependent retuning needed" if full beats simple at small depth but loses at large depth, [or] router-safe status changes with size […]
-
-The "simple" curve is the paired control: identical depth, width, expert geometry, and optimizer, with all five interventions switched off and the baseline softmax router restored. Every claim below is full-vs-simple at matched scale, not "bigger model got better."
 
 ### The mistake: fixed-wall scaling is not a scaling protocol
 
@@ -213,28 +215,24 @@ And at F2, all-MoE flips to losing: 0.0031 BPB worse *and* meaningfully slower (
 
 So the model I actually want — fully sparse, no dense crutch, stable at every size — is sitting right there in the table, one imbalanced layer away. The two-dense recipe remains the default for F2+ scaling for now, per the log. But "for now" is doing a lot of work in that sentence, and the next section of my research life is about removing it.
 
-## So what did the speedrun actually buy?
+## Takeaway
 
-My attempt at an honest decomposition, post-ablation. The interventions split into two groups with different jobs. The **four attention/router interventions** (value mix, sigmoid/bias routing, XSA, headwise gate) bought *quality*: a consistent 1.8–2.4% BPB gap over the simple backbone at every compute-optimal size tested, plus spike-free training and router sanity at sizes where the control gets ugly. The **dense stem** bought *throughput and insurance*: an unambiguous speed advantage at every scale, and protection against the layerwise router imbalance that appears the moment you remove it — at the price of giving back quality at small scale (all of it at F1, where it single-handedly produced the tie) and a smaller net positive at F2. The fixed-wall leaderboard number that drove the whole speedrun (−1.75%) was a *mixture* of quality, speed, and stability, and one thing this project taught me is that a fixed-wall benchmark is a great search signal precisely because it rewards that mixture — and a bad reporting metric for the same reason. Search on fixed-wall, claim on compute-optimal-matched, and ablate component-by-component before telling yourself a story about *why* the stack wins.
+What did the speedrun actually buy? My attempt at an honest decomposition, post-ablation. The interventions split into two groups with different jobs. The **four attention/router interventions** (value mix, sigmoid/bias routing, XSA, headwise gate) bought *quality*: a consistent 1.8–2.4% BPB gap over the simple backbone at every compute-optimal size tested, plus spike-free training and router sanity at sizes where the control gets ugly — and I'm fairly confident in this number precisely because it's *boringly* consistent across scales. The **dense stem** bought *throughput and insurance*: an unambiguous speed advantage at every scale, and protection against the layerwise router imbalance that appears the moment you remove it — at the price of giving back quality at small scale (all of it at F1, where it single-handedly produced the tie) and a smaller net positive at F2. The fixed-wall leaderboard number that drove the whole speedrun (−1.75%) was a *mixture* of quality, speed, and stability. A fixed-wall benchmark is a great search signal precisely because it rewards that mixture — and a bad reporting metric for the same reason. Search on fixed-wall, claim on compute-optimal-matched, and ablate component-by-component before telling yourself a story about *why* the stack wins.
+
+On methodology: I came into this wanting to learn scaling-law practice, and the way I actually learned it was by doing it wrong once at full speed. Fixed-wall scaling produced confident nonsense, and the protocol pivot — compute-optimal budgets, paired controls, per-scale LR re-sweeps — was forced on me by my own garbage data rather than absorbed from a paper. Then the all-MoE ablation taught the same lesson one level deeper: even after the protocol was fixed, my *interpretation* ("Codex's dense stem is the star") was an artifact of the search protocol, and only a component ablation under the claim protocol could correct it. I suspect this is the only way these lessons really stick.
 
 **Recipe, if you want to try this:** write the program before the experiments; pre-register hypotheses *and* repair rules *and* verdict definitions; force one diagnostic beyond the headline metric on every run; make controls non-optional in the document (the agent will not volunteer them); cap exploration depth per idea family; re-sweep LR coarsely at every scale change; and budget for the paired-control curve from the start — it is the difference between a scaling claim and a scaling anecdote.
 {: .notice--success}
 
-## What I learned about working with a research agent
+### Working with a research agent
 
-The subtitle of this post is the one-line readout: I couldn't get Codex to come up with ingenious ideas yet, but it is very useful for babysitting runs. Unpacking both halves:
+The subtitle of this post is the one-line readout: I couldn't get Codex to come up with ingenious ideas yet, but it is very useful for babysitting runs.
 
-**What Codex was great at** (and I mean better-than-me-at-2am great): execution fidelity, log discipline, and *negative-result hygiene*. It never quietly dropped a failed run, always wrote down matched-step comparisons with exact numbers, aborted runs against pre-registered criteria instead of hope, and once spent a diagnostic run instrumenting gradients to figure out *why* an idea failed rather than just recording that it did. A surprising fraction of human research pathology is absent by default. For the scaling phase this mattered even more than in the speedrun: multi-hour runs with LR sweeps and abort criteria are exactly the kind of tedious, vigilance-heavy work where a tireless babysitter beats a sleepy human.
+**Great at** (and I mean better-than-me-at-2am great): execution fidelity, log discipline, and *negative-result hygiene*. It never quietly dropped a failed run, always wrote down matched-step comparisons with exact numbers, aborted runs against pre-registered criteria instead of hope, and once spent a diagnostic run instrumenting gradients to figure out *why* an idea failed rather than just recording that it did (Story 1). A surprising fraction of human research pathology is absent by default. This mattered most in the scaling phase: multi-hour runs with LR sweeps and abort criteria are exactly the kind of tedious, vigilance-heavy work where a tireless babysitter beats a sleepy human.
 
-**What it was bad at:** knowing which question is worth asking next. Its failure mode is never laziness — it's a kind of diligent myopia, generating an endless sequence of locally-justified next steps down whatever gradient is in front of it (finer LR grids, an eighth depth-scaling variant). And when I explicitly asked for creativity via literature-search loops, I got ideas that *sounded* like research — well-motivated, properly cited — and didn't survive the benchmark. The program is the steering mechanism, and the program is where the research taste lives. I rewrote it many times, and each rewrite was prompted by watching a specific unproductive behavior and asking "what sentence would have prevented this?" (Standard caveats: this is one project, one model, at most one night of test-time compute per attempt. I fully expect this readout to age.)
+**Bad at:** knowing which question is worth asking next. Its failure mode is never laziness — it's a kind of diligent myopia, generating an endless sequence of locally-justified next steps down whatever gradient is in front of it (finer LR grids, an eighth depth-scaling variant). And when I explicitly asked for creativity via the literature-search program, I got ideas that *sounded* like research — diverse, well-motivated, properly cited — and didn't survive the benchmark, plausibly for lack of iteration compute. The program is the steering mechanism, and the program is where the research taste lives. I rewrote it many times, and each rewrite was prompted by watching a specific unproductive behavior and asking "what sentence would have prevented this?" (Standard caveats: this is one project, one model, at most one night of test-time compute per attempt. I fully expect this readout to age.)
 
-**The thing I didn't expect:** writing the program made *me* a better experimentalist. Pre-registering verdict definitions, separating search metrics from claim metrics, deciding repair budgets before failures happen — none of this is agent-specific. It's just methodology that becomes *mandatory* when your collaborator executes everything literally and never pushes back. The agent is a mirror with a very high frame rate. (My PhD advisor will be pleased that "lower your standards, write down the boring calculation explicitly" turns out to be transferable from quantum gravity to MoE routers.)
-
-## What I take away
-
-I came into this wanting to learn scaling-law methodology, and the way I actually learned it was by doing it wrong once at full speed: fixed-wall scaling produced confident nonsense, and the protocol pivot — compute-optimal budgets, paired controls, per-scale LR re-sweeps — was forced on me by my own garbage data rather than absorbed from a paper. Then the all-MoE ablation taught the same lesson one level deeper: even after the protocol was fixed, my *interpretation* ("Codex's dense stem is the star") was an artifact of the search protocol, and only a component ablation under the claim protocol could correct it. I suspect this is the only way these lessons really stick.
-
-On the object level, my current beliefs: the attention/router intervention bundle (damped first-value mix, sigmoid/bias routing with light load-balance pressure, exclusive attention, near-identity headwise gate) is worth a consistent ~1.8–2.4% BPB over the simple backbone at compute-optimal scales up to 185M active, and I'm fairly confident in it precisely because it's *boringly* consistent. The dense stem is a stabilizer-with-a-price, not a quality win. And the model I actually want — all-MoE, no crutch — is currently gated on a routing stability problem I don't know how to solve yet. The F3 simple and all-MoE controls will move these beliefs more than any other runs.
+**Didn't expect:** writing the program made *me* a better experimentalist. Pre-registering verdict definitions, separating search metrics from claim metrics, deciding repair budgets before failures happen — none of this is agent-specific. It's just methodology that becomes *mandatory* when your collaborator executes everything literally and never pushes back. The agent is a mirror with a very high frame rate. (My PhD advisor will be pleased that "lower your standards, write down the boring calculation explicitly" turns out to be transferable from quantum gravity to MoE routers.)
 
 ## Final thoughts
 
@@ -242,11 +240,13 @@ This post is not a conclusion; it's just a beginning. The all-MoE ablation hande
 
 But, well, I clearly set too high a goal again. The lesson of my PhD was to lower my standards, validate the simplest thing I can fully understand, and iterate; the lesson of this project is that I still haven't fully internalized it. "Stabilize all-MoE at every scale" is not the simplest thing I can fully understand — I can't even claim to fully understand how to stabilize and scale a *dense* model yet, with hyperparameters that transfer instead of hyperparameters re-bracketed by brute force at every size. So, lower the standards once more: dense models first. That's μP, and that's the next post. Then, with that foundation, back to MoE: implement QB, point it at the F1 all-MoE hot layer, and see whether that is enough to stabilize the runs and let the dense crutch go.
 
-(The algorithm phase is also queued — the next program is already written, opening with the embarrassing observation that we train mean token CE while evaluating byte-weighted BPB, so the training objective and the benchmark metric are misaligned by construction. So many threads, so few GPUs. It feels great to be at the beginning of something.)
+(The algorithm phase is also queued — its program is the literature-search one from earlier, the one whose ideas haven't earned a keep yet; its top-priority item is fixing that train-CE-vs-BPB misalignment Codex spotted, and I want to rerun the whole idea-generation loop with far more inference budget. So many threads, so few GPUs. It feels great to be at the beginning of something.)
 
 ---
 
-## Appendix A: the five interventions, in math and code
+# Appendix
+
+## A: the kept interventions, in math and code
 
 All code below is the actual `train.py` implementation (lightly trimmed). Notation: $$x \in \mathbb{R}^{B\times T\times d}$$ is the residual stream, $$h$$ heads, $$E=16$$ experts, $$K=2$$ active.
 
@@ -354,7 +354,7 @@ class Block(nn.Module):
             self.moe = TokenChoiceMoE(config)
 ```
 
-## Appendix B: the discard pile
+## B: ideas that didn't work
 
 For completeness, everything that was tried and rejected in the clean lineage, with the one-line reason. Learned scalar first-value residual (disturbed routing before helping; see Story 1). Learned and normalized-learned value mixes (stabilizable by the sigmoid/bias router, but quality never matched the fixed mix). Aggressive fixed mixes 2:1, 3:1 (worse matched-step loss even with a healthy router — a quality failure, not a stability one). Fine-grained experts 32/top-4/896 (lost twice, ~0.018 BPB, despite cleaner per-expert load). Sigmoid affinities *without* bias (early matched-step edge that evaporated by run end). Softmax + light load-balance control (the run that earned the router its keep). Six depth-scaling variants (every placement of $$1/\sqrt{\ell}$$ lost; internal worst, output-side least bad; consistent story: this model wants full-amplitude branches). Centered $$2\sigma$$ attention gate (won warmup, lost training). Third dense layer (saturation). Attention-gate init 0.99 (tie with 0.98, kept 0.98). E ∈ {4, 8, 32, 64, 128} (the U-curve). LRs 0.01 and 0.001 at 91M fixed-wall, 0.003 and 0.000333 at F2, 0.003 at F3, 0.0003 at F4 (the moving optimum).
 
