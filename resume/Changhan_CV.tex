@@ -40,7 +40,7 @@
 \begin{document}
 
 % ======================= Header =======================================
-{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: June 2026}
+{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: September 2026}
 
 \vspace{4pt}
 {\color{rule}\hrule height 1pt}
@@ -60,46 +60,33 @@ Web: \href{https://chang-han-chen.github.io}{chang-han-chen.github.io}
         GPA \hl{4.9/5}; Morse/Orloff award for best senior thesis.
 \end{itemize}
 
-% ======================= Skills =======================================
-\section{Skills (besides physics)}
-\begin{itemize}
-  \item \textbf{Research:} von Neumann algebras, random matrix and free probability, language model training.
-  \item \textbf{Coursework:} \href{https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/}{algorithm design},
-        \href{https://www.argmin.net/p/convex-optimization-in-the-age-of}{convex optimization},
-        probability theory, statistical learning theory.
-\end{itemize}
-
 % ======================= Research Interest ============================
 \section{Research Interest}
-\textit{What is the most puzzling, mysterious aspect of our universe?}
+Many challenges in AI, across both capability and safety, are actually about generalization. Think about
+solving scientific problems beyond human ability, or alignment in unfamiliar situations where reward seems
+almost impossible.
 
 \vspace{4pt}
-\textbf{Universality of holography: GR + QM = hologram?}
-Instead of betting on one particular theory such as string theory or loop quantum gravity that are
-``invisible'' to current technology, I believe in the universality of holography: \emph{any}
-non-perturbative quantum theory consistent with general relativity is holographic, i.e.\ the
-information in quantum gravity lives on the boundary. The goal of my Ph.D.\ is to explore as many
-aspects of this universality as possible, e.g.\ two-dimensional toy models and von Neumann algebras.
+I aim to improve \textbf{data efficiency and generalization} through (1) architectures that use denser
+computation to reason more effectively, and (2) training algorithms that continue to improve learning from
+fixed data or rollouts as compute increases. My interests include architectural and optimization changes
+that enable deeper computation, such as skip connections and preconditioning; diffusion training curricula;
+ensembling; and stable reinforcement learning for transformers that reason in latent space.
 
 \vspace{4pt}
-For my recent interest in AI, see \href{https://chang-han-chen.github.io/blog/a-new-chapter/}{this blog}.
+For more on how I think about these questions, see \href{https://chang-han-chen.github.io/blog/a-new-chapter/}{this blog}.
 
 % ======================= Selected Projects ============================
 \section{Selected Projects}
 \begin{itemize}
-  \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{hl}{MoE autoresearch}}}{2026}\\
+  \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{black}{MoE autoresearch}}}{2026}\\
         Explored LLM-agent-driven ``autoresearch'' on autoregressive mixture-of-experts transformers,
         stacking interventions to a 1.75\% bits-per-byte gain that persists under compute-optimal scaling.
   \item \entry{\href{https://github.com/Chang-Han-Chen/sample-efficient-dlm}{\textcolor{black}{Optimal block-size curriculum for diffusion language models}}}{2026 Spring}\\
         Designed a block-size curriculum for pretraining block-diffusion language models, sweeping the
-        autoregressive-vs-diffusion training budget and finding a consistent sample-efficiency optimum near 30\%.
-  \item \entry{\href{https://arxiv.org/abs/2506.04311}{\textcolor{black}{An apologia for islands}}\ \normalfont(with S.\ Antonini, H.\ Maxfield, G.\ Penington)}{2025 Spring}\\
-        Proved that entanglement islands and the Page curve emerge even with \emph{massless} gravitons and
-        no external reservoir, using gauge-invariant gravitational operators to show black-hole interior
-        operators are non-perturbatively encoded in Hawking radiation.
-  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{hl}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{2024 Spring}\\
-        Resolved prevalent misconceptions and pioneered practical applications of abstract mathematical
-        tools to cosmological modeling, with work that became fairly influential in the field.
+        autoregressive vs.\ diffusion training budget and finding a consistent sample-efficiency optimum near 30\%.
+  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{black}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{2024 Spring}\\
+        Applied von Neumann algebra tools to cosmology, clearing up common misconceptions; widely cited in the field.
   \item \entry{\href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{Geometry and entanglement in AdS/CFT and beyond}}}{2022 Spring}\\
         Independent senior thesis, awarded MIT's Morse/Orloff prize for best senior thesis in theoretical physics.
 \end{itemize}
@@ -120,5 +107,15 @@ MIT & UC Berkeley & U.\ of Cambridge\\
 \href{mailto:geoffp@berkeley.edu}{geoffp@berkeley.edu} &
 \href{mailto:aroncwall@gmail.com}{aroncwall@gmail.com}\\
 \end{tabular}
+
+% ======================= Skills =======================================
+\section{Skills}
+\begin{itemize}
+  \item \textbf{Programming:} Python, PyTorch, JAX, Megatron-LM, SGLang, SkyRL.
+  \item \textbf{Research:} von Neumann algebras, random matrix and free probability, language model training.
+  \item \textbf{Coursework:} \href{https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/}{algorithm design},
+        \href{https://www.argmin.net/p/convex-optimization-in-the-age-of}{convex optimization},
+        probability theory, statistical learning theory.
+\end{itemize}
 
 \end{document}
