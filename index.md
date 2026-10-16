@@ -22,6 +22,8 @@ Recently, I have been exploring AI research.
 
 ## Recent News
 
+**September 2026** My paper with Geoff, Gautam, and Elisa ["Holographic algebras at null infinity"](https://arxiv.org/abs/2609.01706) is out! What can we learn about the bulk from a cut of null infinity? It turns out that the Bondi mass needs to be regulated carefully before it makes sense as a quantum operator. We use it to reconstruct bulk regions in asymptotically flat spacetimes, including a flat-space analogue of an entanglement wedge. We also recover generalized black hole entropy from a regulated von Neumann algebra. Interestingly, the algebras shrink as radiation escapes, giving an irreversible notion of holographic time evolution.
+
 **February 2026** My paper with Andreas ["Time in gravitational subregions and in closed universes"](https://arxiv.org/abs/2602.22153) is out! Inspired by my paper with Geoff, we study other features of spacetime. In this work, we dress to the curvature in 2D universe, and find explicit formulas for semiclassical entropies. Interestingly, the entropy agrees with generalized entropy if and only if the time flow is Killing on the slice. This challenges the distinguished role generalized entropies have played in our field.
 
 **November 2025** Thanks Institute for Advanced Study for having me for three weeks~
