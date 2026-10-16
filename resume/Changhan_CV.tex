@@ -21,12 +21,13 @@
 
 % ---- Layout -----------------------------------------------------------
 \setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{1em}
 \pagestyle{empty}
 
 % Section headings: full-width, colored, bold, with a rule underneath.
 \titleformat{\section}
   {\large\bfseries\color{accent}}{}{0pt}{}[\vspace{1pt}{\color{rule}\titlerule[1pt]}]
-\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titlespacing*{\section}{0pt}{9pt}{6pt}
 
 % List styling: tight, no extra left indent.
 \setlist[itemize]{leftmargin=1.4em, itemsep=2pt, topsep=2pt, parsep=0pt}
@@ -40,7 +41,7 @@
 \begin{document}
 
 % ======================= Header =======================================
-{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: September 2026}
+{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: October 2026}
 
 \vspace{4pt}
 {\color{rule}\hrule height 1pt}
@@ -62,32 +63,41 @@ Web: \href{https://chang-han-chen.github.io}{chang-han-chen.github.io}
 
 % ======================= Research Interest ============================
 \section{Research Interest}
-Many challenges in AI, across both capability and safety, are actually about generalization. Think about
-solving scientific problems beyond human ability, or alignment in unfamiliar situations where reward seems
-almost impossible.
+Over my PhD years, I hope to infer the minimal structure of quantum gravity solely from general relativity
+and quantum mechanics. No string theory or loop quantum gravity. I successfully derive holographic entropy
+formulas and construct gauge-invariant observables in, for instance, slow-roll inflation, two-dimensional
+dilaton gravity, and general regions bounded by extremal surfaces. This opens up a promising research
+program for von Neumann algebras as the bottom-up framework for quantum gravity.
 
 \vspace{4pt}
-I aim to improve \textbf{data efficiency and generalization} through (1) architectures that use denser
-computation to reason more effectively, and (2) training algorithms that continue to improve learning from
-fixed data or rollouts as compute increases. My interests include architectural and optimization changes
-that enable deeper computation, such as skip connections and preconditioning; diffusion training curricula;
-ensembling; and stable reinforcement learning for transformers that reason in latent space.
-
-\vspace{4pt}
-For more on how I think about these questions, see \href{https://chang-han-chen.github.io/blog/a-new-chapter/}{this blog}.
+I also study data-efficient training of deep neural networks and the science of reinforcement learning.
+My empirical work has explored accelerating diffusion language model pretraining and using agents to
+improve MoE architectures. More recently, I focus on developing a principled framework for reinforcement
+learning in large language models, in which scores and critics form coupled martingales, with applications
+to variance reduction.
 
 % ======================= Selected Projects ============================
 \section{Selected Projects}
 \begin{itemize}
-  \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{black}{MoE autoresearch}}}{2026}\\
+  \item \entry{The two principles of LLM policy gradients \normalfont(work in progress)}{Oct. 2026}\\
+        Developing a framework for LLM policy gradients using the martingale structure of cumulative scores
+        and conditional expected rewards; exploring branching and control variates for variance reduction.
+  \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{black}{MoE autoresearch}}}{Jun. 2026}\\
         Explored LLM-agent-driven ``autoresearch'' on autoregressive mixture-of-experts transformers,
         stacking interventions to a 1.75\% bits-per-byte gain that persists under compute-optimal scaling.
-  \item \entry{\href{https://github.com/Chang-Han-Chen/sample-efficient-dlm}{\textcolor{black}{Optimal block-size curriculum for diffusion language models}}}{2026 Spring}\\
+  \item \entry{\href{https://github.com/Chang-Han-Chen/sample-efficient-dlm}{\textcolor{black}{Optimal block-size curriculum for diffusion language models}}}{Jun. 2026}\\
         Designed a block-size curriculum for pretraining block-diffusion language models, sweeping the
         autoregressive vs.\ diffusion training budget and finding a consistent sample-efficiency optimum near 30\%.
-  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{black}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{2024 Spring}\\
-        Applied von Neumann algebra tools to cosmology, clearing up common misconceptions; widely cited in the field.
-  \item \entry{\href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{Geometry and entanglement in AdS/CFT and beyond}}}{2022 Spring}\\
+  \item \entry{\href{https://arxiv.org/abs/2609.01706}{\textcolor{black}{Holographic algebras at null infinity}}}{Sep. 2026}\\
+        Constructed algebras at null infinity that reconstruct bulk regions in asymptotically flat spacetimes;
+        recovered generalized black hole entropy from a regulated von Neumann algebra.
+  \item \entry{\href{https://arxiv.org/abs/2506.04311}{\textcolor{black}{An apologia for islands}}}{Jun. 2025}\\
+        Showed how entanglement islands and the Page curve arise with massless gravitons and no external
+        reservoir; constructed compactly supported gravitational observables to all perturbative orders.
+  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{black}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{Jun. 2024}\\
+        First demonstration of gauge-invariant algebras without an observer, contrary to the common belief.
+        Derive holographic entropy for cosmological spacetimes and more general subregions.
+  \item \entry{\href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{Geometry and entanglement in AdS/CFT and beyond}}}{May 2022}\\
         Independent senior thesis, awarded MIT's Morse/Orloff prize for best senior thesis in theoretical physics.
 \end{itemize}
 
@@ -98,24 +108,11 @@ For more on how I think about these questions, see \href{https://chang-han-chen.
   \item \entry{Gold medal, \href{https://ipho2018.pt/content/exams}{International Physics Olympiad} (IPhO)}{2018}
 \end{itemize}
 
-% ======================= References ===================================
-\section{References}
-\begin{tabular}{@{}lll@{}}
-Prof.\ \textbf{Hong Liu} & Prof.\ \textbf{Geoff Penington} & Prof.\ \textbf{Aron Wall}\\
-MIT & UC Berkeley & U.\ of Cambridge\\
-\href{mailto:hong_liu@mit.edu}{hong\_liu@mit.edu} &
-\href{mailto:geoffp@berkeley.edu}{geoffp@berkeley.edu} &
-\href{mailto:aroncwall@gmail.com}{aroncwall@gmail.com}\\
-\end{tabular}
-
 % ======================= Skills =======================================
 \section{Skills}
 \begin{itemize}
   \item \textbf{Programming:} Python, PyTorch, JAX, Megatron-LM, SGLang, SkyRL.
   \item \textbf{Research:} von Neumann algebras, random matrix and free probability, language model training.
-  \item \textbf{Coursework:} \href{https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/}{algorithm design},
-        \href{https://www.argmin.net/p/convex-optimization-in-the-age-of}{convex optimization},
-        probability theory, statistical learning theory.
 \end{itemize}
 
 \end{document}
