@@ -41,7 +41,7 @@
 \begin{document}
 
 % ======================= Header =======================================
-{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: October 2026}
+{\huge\bfseries Chang-Han Chen}\hfill{\small\color{gray}Last update: November 2026}
 
 \vspace{4pt}
 {\color{rule}\hrule height 1pt}
@@ -56,9 +56,9 @@ Web: \href{https://chang-han-chen.github.io}{chang-han-chen.github.io}
 % ======================= Education ====================================
 \section{Education}
 \begin{itemize}
-  \item \entry{Ph.D. in Theoretical Physics, University of California, Berkeley}{expected \hl{end of 2026}}
+  \item \entry{Ph.D. in Theoretical Physics, University of California, Berkeley}{}
   \item \entry{B.Sc. in Physics and Mathematics, Massachusetts Institute of Technology}{2022}\\
-        GPA \hl{4.9/5}; Morse/Orloff award for best senior thesis.
+        GPA \hl{4.9/5}; senior thesis \href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{\emph{Geometry and entanglement in AdS/CFT and beyond}}}.
 \end{itemize}
 
 % ======================= Research Interest ============================
@@ -70,35 +70,42 @@ dilaton gravity, and general regions bounded by extremal surfaces. This opens up
 program for von Neumann algebras as the bottom-up framework for quantum gravity.
 
 \vspace{4pt}
-I also study data-efficient training of deep neural networks and the science of reinforcement learning.
-My empirical work has explored accelerating diffusion language model pretraining and using agents to
-improve MoE architectures. More recently, I focus on developing a principled framework for reinforcement
-learning in large language models, in which scores and critics form coupled martingales, with applications
-to variance reduction.
+I also study the science of training language models, especially reinforcement learning (RL). At very low
+signal-to-noise ratio, Brownian motion as a toy model is surprisingly predictive. For example, I use it to
+derive compute-optimal adaptive sampling and explain RL collapse from trainer-inference mismatch. I am
+also interested in data efficiency, scaling laws, and subliminal effects.
 
-% ======================= Selected Projects ============================
-\section{Selected Projects}
+% ======================= Selected ML Projects =========================
+\section{Machine Learning Projects}
 \begin{itemize}
-  \item \entry{The two principles of LLM policy gradients \normalfont(work in progress)}{Oct. 2026}\\
-        Developing a framework for LLM policy gradients using the martingale structure of cumulative scores
-        and conditional expected rewards; exploring branching and control variates for variance reduction.
+  \item \entry{\href{https://chang-han-chen.github.io/science-adaptive-sampling/}{\textcolor{hl}{How to think about compute-optimal adaptive sampling?}}}{Nov. 2026}\\
+        Formalizes adaptive sampling as stochastic programming under an inference + training compute budget.
+        On Qwen3-8B: 17\% lower gradient variance than GRPO at equal compute; +6.4 points held-out accuracy
+        at equal training compute.
+  \item \entry{\href{https://subliminal-watermarks.github.io}{\textcolor{black}{Subliminal watermarks: robust distillation detection}}\ \normalfont(with S.\ Min et al.)}{Nov. 2026}\\
+        Proposed simple methods that break popular watermark detections such as SynthID. Introduced SubWM,
+        a novel watermark detection method, robust against our attacks, and generalizes out-of-domain.
   \item \entry{\href{https://github.com/Chang-Han-Chen/autoresearch-moe}{\textcolor{black}{MoE autoresearch}}}{Jun. 2026}\\
         Explored LLM-agent-driven ``autoresearch'' on autoregressive mixture-of-experts transformers,
         stacking interventions to a 1.75\% bits-per-byte gain that persists under compute-optimal scaling.
-  \item \entry{\href{https://github.com/Chang-Han-Chen/sample-efficient-dlm}{\textcolor{black}{Optimal block-size curriculum for diffusion language models}}}{Jun. 2026}\\
-        Designed a block-size curriculum for pretraining block-diffusion language models, sweeping the
-        autoregressive vs.\ diffusion training budget and finding a consistent sample-efficiency optimum near 30\%.
+\end{itemize}
+
+% ======================= Physics Publications =========================
+\section{Physics Publications}
+\begin{itemize}
   \item \entry{\href{https://arxiv.org/abs/2609.01706}{\textcolor{black}{Holographic algebras at null infinity}}}{Sep. 2026}\\
-        Constructed algebras at null infinity that reconstruct bulk regions in asymptotically flat spacetimes;
-        recovered generalized black hole entropy from a regulated von Neumann algebra.
+        Reconstructed bulk regions of flat spacetimes, and generalized entropy, from algebras at null infinity.
+  \item \entry{\href{https://arxiv.org/abs/2602.22153}{\textcolor{black}{Time in gravitational subregions and in closed universes}}\ \normalfont(with A.\ Blommaert)}{Feb. 2026}\\
+        Observer-free algebras in JT gravity with extrinsic curvature as the clock; entropy beyond area terms.
   \item \entry{\href{https://arxiv.org/abs/2506.04311}{\textcolor{black}{An apologia for islands}}}{Jun. 2025}\\
-        Showed how entanglement islands and the Page curve arise with massless gravitons and no external
-        reservoir; constructed compactly supported gravitational observables to all perturbative orders.
-  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{black}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{Jun. 2024}\\
-        First demonstration of gauge-invariant algebras without an observer, contrary to the common belief.
-        Derive holographic entropy for cosmological spacetimes and more general subregions.
-  \item \entry{\href{https://inspirehep.net/files/c1b52950194cd41895084217803489d7}{\textcolor{black}{Geometry and entanglement in AdS/CFT and beyond}}}{May 2022}\\
-        Independent senior thesis, awarded MIT's Morse/Orloff prize for best senior thesis in theoretical physics.
+        Entanglement islands and the Page curve with massless gravitons and no external reservoir.
+  \item \entry{\href{https://arxiv.org/abs/2406.02116}{\textcolor{hl}{A clock is just a way to tell the time}}\ \normalfont(with G.\ Penington)}{Jun. 2024}\\
+        First demonstration of gauge-invariant algebras without an observer, contrary to common belief.
+        Derived holographic entropy in cosmology and general subregions. Invited talk at Caltech.
+  \item \entry{\href{https://arxiv.org/abs/2403.07049}{\textcolor{black}{Firewalls at exponentially late times}}}{Mar. 2024}\\
+        Wormholes at exponentially late times make firewalls likely; even the safest state has a 50/50 chance.
+  \item \entry{\href{https://arxiv.org/abs/2204.06589}{\textcolor{black}{The boundaries of 2+1D fermionic topological orders}}\ \normalfont(with X.-G.\ Wen)}{Apr. 2022}\\
+        Gapped boundaries of abelian fermionic orders via modular covariant partition functions.
 \end{itemize}
 
 % ======================= Honors and Awards ============================
@@ -106,13 +113,6 @@ to variance reduction.
 \begin{itemize}
   \item \entry{\href{https://physics.mit.edu/academic-programs/student-awards/}{Morse/Orloff Research Award} -- best senior thesis in theoretical physics, MIT}{2022}
   \item \entry{Gold medal, \href{https://ipho2018.pt/content/exams}{International Physics Olympiad} (IPhO)}{2018}
-\end{itemize}
-
-% ======================= Skills =======================================
-\section{Skills}
-\begin{itemize}
-  \item \textbf{Programming:} Python, PyTorch, JAX, Megatron-LM, SGLang, SkyRL.
-  \item \textbf{Research:} von Neumann algebras, random matrix and free probability, language model training.
 \end{itemize}
 
 \end{document}
